@@ -42,14 +42,14 @@ These are capability declarations, not a promise that every transport is impleme
 
 `src/stella/w33z_link.cpp` is the first real transport implementation.
 
-The link is **opt-in**. Copy `stella_link.example.json` to `/stella_link.json` on the Stella SD card and adjust `baseUrl`.
+The link is **opt-in**. Copy `stella_link.example.json` to `/stella_link.json` on the Stella SD card and replace `W33Z-IP` with the LAN IP/hostname of the machine exposing W33Z on port 3033.
 
 Example:
 
 ```json
 {
   "enabled": true,
-  "baseUrl": "http://10.0.20.139:3033",
+  "baseUrl": "http://W33Z-IP:3033",
   "wifiAutoConnect": false,
   "heartbeatMs": 5000,
   "commandPollMs": 1500,

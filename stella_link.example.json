@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "baseUrl": "http://10.0.20.139:3033",
+  "wifiAutoConnect": false,
+  "heartbeatMs": 5000,
+  "commandPollMs": 1500,
+  "reconnectMs": 10000
+}

@@ -34,6 +34,11 @@ const String& baseUrl();
 const String& deviceId();
 const String& lastError();
 
+// Firmware can expose its current technical state without coupling W33Z to the
+// internal UI/mode naming. Valid states: idle, scanning, syncing, paused,
+// warning, error, sleeping.
+void setTechnicalState(const char* state);
+
 // Request an immediate handshake/telemetry cycle on next update().
 void nudge();
 

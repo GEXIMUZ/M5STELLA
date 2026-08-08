@@ -1,13 +1,14 @@
-# Porkchop pre-build script
-# Ensures model files exist and generates version info
+# M5STELLA pre-build script
+# Generates deterministic firmware version/build metadata.
 
 Import("env")
 import os
 import subprocess
 from datetime import datetime
 
+
 def get_git_commit():
-    """Get short git commit hash, or 'unknown' if not in a git repo"""
+    """Get short git commit hash, or 'unknown' if not in a git repo."""
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
@@ -19,20 +20,22 @@ def get_git_commit():
         pass
     return "unknown"
 
+
 def pre_build_callback(source, target, env):
-    """Generate build info header"""
+    """Generate build info header consumed by Stella identity + UI."""
     build_info = {
         "build_time": datetime.now().isoformat(),
-        "version": env.GetProjectOption("custom_version", "0.1.1"),
+        "version": env.GetProjectOption("custom_version", "0.1.0-stella-alpha"),
         "commit": get_git_commit()
     }
-    
+
     info_path = os.path.join(env.get("PROJECT_SRC_DIR"), "build_info.h")
     with open(info_path, "w") as f:
-        f.write("// Auto-generated build info\n")
+        f.write("// Auto-generated M5STELLA build info\n")
         f.write("#pragma once\n")
         f.write(f'#define BUILD_TIME "{build_info["build_time"]}"\n')
         f.write(f'#define BUILD_VERSION "{build_info["version"]}"\n')
         f.write(f'#define BUILD_COMMIT "{build_info["commit"]}"\n')
+
 
 env.AddPreAction("buildprog", pre_build_callback)

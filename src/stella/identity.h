@@ -13,7 +13,6 @@ static constexpr const char* kProduct = "M5STELLA";
 static constexpr const char* kTitle = "STELLA THE WARDOG";
 static constexpr const char* kPlatform = "W33Z";
 
-// These names intentionally match the W33Z Stella protocol exactly.
 static constexpr const char* kCapabilities[] = {
     "telemetry",
     "gps",
@@ -29,8 +28,6 @@ static constexpr const char* kCapabilities[] = {
 
 static constexpr size_t kCapabilityCount = sizeof(kCapabilities) / sizeof(kCapabilities[0]);
 
-// User-facing vocabulary. Internal donor class names remain compatible until
-// each subsystem has been migrated and compile-tested.
 namespace Groups {
 static constexpr const char* Assess = "ASSESS";
 static constexpr const char* Recon = "RECON";
@@ -41,14 +38,14 @@ static constexpr const char* System = "SYSTEM";
 }
 
 namespace Modes {
-static constexpr const char* Bite = "BITE";                 // authorized active assessment
-static constexpr const char* Sniff = "SNIFF";               // passive Wi-Fi discovery
-static constexpr const char* Patrol = "PATROL";             // GPS wardriving
-static constexpr const char* BluePaws = "BLUE PAWS";        // BLE reconnaissance
-static constexpr const char* Airwatch = "AIRWATCH";         // RF/spectrum inspection
-static constexpr const char* PackLink = "PACK LINK";        // W33Z sync + control link
-static constexpr const char* Howl = "HOWL";                 // RF transmit tooling
-static constexpr const char* FriendlyPack = "FRIENDLY PACK";// trusted/excluded devices
+static constexpr const char* Bite = "BITE";
+static constexpr const char* Sniff = "SNIFF";
+static constexpr const char* Patrol = "PATROL";
+static constexpr const char* BluePaws = "BLUE PAWS";
+static constexpr const char* Airwatch = "AIRWATCH";
+static constexpr const char* PackLink = "PACK LINK";
+static constexpr const char* Howl = "HOWL";
+static constexpr const char* FriendlyPack = "FRIENDLY PACK";
 static constexpr const char* WardogStats = "WARDOG STATS";
 static constexpr const char* About = "ABOUT STELLA";
 }
@@ -79,3 +76,18 @@ inline String deviceId() {
 }
 
 } // namespace StellaIdentity
+
+// Compact user-facing aliases for UI modules. This keeps copy centralized while
+// donor subsystem class names are migrated independently.
+namespace StellaLanguage {
+static constexpr const char* kBite = StellaIdentity::Modes::Bite;
+static constexpr const char* kSniff = StellaIdentity::Modes::Sniff;
+static constexpr const char* kPatrol = StellaIdentity::Modes::Patrol;
+static constexpr const char* kBluePaws = StellaIdentity::Modes::BluePaws;
+static constexpr const char* kAirwatch = StellaIdentity::Modes::Airwatch;
+static constexpr const char* kPackLink = StellaIdentity::Modes::PackLink;
+static constexpr const char* kHowl = StellaIdentity::Modes::Howl;
+static constexpr const char* kFriendlyPack = StellaIdentity::Modes::FriendlyPack;
+static constexpr const char* kWardogStats = StellaIdentity::Modes::WardogStats;
+static constexpr const char* kAboutStella = StellaIdentity::Modes::About;
+}

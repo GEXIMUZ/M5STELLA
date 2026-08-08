@@ -2,7 +2,11 @@ name: Build
 
 on:
   push:
-    branches: [ main, develop, personality_disorder_innit ]
+    branches:
+      - main
+      - develop
+      - personality_disorder_innit
+      - 'feature/**'
   pull_request:
     branches: [ main ]
 
@@ -24,13 +28,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install platformio
 
-      - name: Build firmware
+      - name: Build Stella firmware
         run: |
           pio run -e m5cardputer
+
+      - name: Run native tests
+        run: |
+          pio test -e native
 
       - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
-          name: firmware
+          name: m5stella-firmware
           path: .pio/build/m5cardputer/firmware.bin
           retention-days: 30

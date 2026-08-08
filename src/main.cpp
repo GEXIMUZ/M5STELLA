@@ -24,6 +24,7 @@
 #include "modes/warhog.h"
 #include "audio/sfx.h"
 #include "stella/identity.h"
+#include "stella/splash.h"
 #include "stella/w33z_link.h"
 
 // Legacy core controller retained during the staged Stella refactor.
@@ -178,9 +179,9 @@ void setup() {
     Display::init();
     SFX::init();
 
-    // Legacy splash renderer is retained temporarily; the Stella art pass will
-    // replace the old pig-specific frames rather than layering more hacks here.
-    Display::showBootSplash();
+    // Stella gets her own boot identity immediately; legacy display internals
+    // remain isolated until the full avatar/personality art pass.
+    StellaSplash::show();
 
     M5.Display.setBrightness(Config::personality().brightness * 255 / 100);
 

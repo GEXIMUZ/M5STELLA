@@ -1,13 +1,13 @@
-// m5porkchop
+// M5STELLA
 // Main entry point
-// by 0ct0
+// Based on M5PORKCHOP by 0ct0, evolved under the MIT license.
 
 #include <M5Cardputer.h>
 #include <M5Unified.h>
 #include <SD.h>
-#include <WiFi.h>              // <-- PATCH: init WiFi early (before heap fragmentation)
-#include <esp_heap_caps.h>     // For heap conditioning
-#include <string.h>            // For memset
+#include <WiFi.h>
+#include <esp_heap_caps.h>
+#include <string.h>
 #include "core/porkchop.h"
 #include "core/config.h"
 #include "core/xp.h"
@@ -23,46 +23,111 @@
 #include "modes/oink.h"
 #include "modes/warhog.h"
 #include "audio/sfx.h"
+#include "stella/identity.h"
+#include "stella/w33z_link.h"
 
+// Legacy core controller retained during the staged Stella refactor.
+// New integrations should talk through StellaLink rather than coupling to this name.
 Porkchop porkchop;
 
-// --- PATCH: Pre-init WiFi driver early to avoid later esp_wifi_init() failures
-// Some reconnect flows (and some Arduino/M5 stacks) end up deinit/reinit WiFi later.
-// If heap is fragmented by display sprites / big allocations, esp_wifi_init() may fail with:
-//   "Expected to init 4 rx buffer, actual is X" and "wifiLowLevelInit(): esp_wifi_init 257"
+static bool handleStellaCommand(StellaLink::CommandAction action, const String& payload, String& result) {
+    (void)payload;
+
+    switch (action) {
+        case StellaLink::CommandAction::SNIFF:
+            // Remote "Sniff" deliberately enters passive wardriving, not an active attack mode.
+            porkchop.setMode(PorkchopMode::WARHOG_MODE);
+            StellaLink::setTechnicalState("scanning");
+            result = "Sniffing: passive WARHOG wardrive started.";
+            return true;
+
+        case StellaLink::CommandAction::STAY:
+            porkchop.setMode(PorkchopMode::IDLE);
+            StellaLink::setTechnicalState("paused");
+            result = "Stay: current remote work paused.";
+            return true;
+
+        case StellaLink::CommandAction::HEEL:
+            porkchop.setMode(PorkchopMode::IDLE);
+            StellaLink::setTechnicalState("idle");
+            result = "Heel: returned to idle.";
+            return true;
+
+        case StellaLink::CommandAction::BARK:
+            // Temporary synthesized bark until the full Stella sound bank lands.
+            SFX::tone(220, 70);
+            result = "Woof.";
+            return true;
+
+        case StellaLink::CommandAction::FETCH:
+            result = "Fetch transport is not wired yet; protocol path is reserved.";
+            return false;
+
+        case StellaLink::CommandAction::DELIVER:
+            result = "Deliver transport is not wired yet; protocol path is reserved.";
+            return false;
+
+        case StellaLink::CommandAction::DISPLAY_SNAPSHOT:
+            result = "Display snapshot transport is not wired yet.";
+            return false;
+
+        case StellaLink::CommandAction::LOGS_TAIL:
+            result = "Remote log tail is not wired yet.";
+            return false;
+
+        case StellaLink::CommandAction::FIRMWARE_PREPARE:
+            result = "Remote firmware staging is not wired yet.";
+            return false;
+
+        case StellaLink::CommandAction::REBOOT:
+            result = "Remote reboot intentionally disabled until authenticated pairing lands.";
+            return false;
+
+        default:
+            result = "Unknown Stella command.";
+            return false;
+    }
+}
+
+static void updateStellaTechnicalState() {
+    switch (porkchop.getMode()) {
+        case PorkchopMode::WARHOG_MODE:
+        case PorkchopMode::DNH_MODE:
+        case PorkchopMode::OINK_MODE:
+        case PorkchopMode::SPECTRUM_MODE:
+            StellaLink::setTechnicalState("scanning");
+            break;
+        case PorkchopMode::PIGSYNC_DEVICE_SELECT:
+        case PorkchopMode::PIGSYNC_CALL:
+        case PorkchopMode::FILE_TRANSFER:
+            StellaLink::setTechnicalState("syncing");
+            break;
+        case PorkchopMode::CHARGING:
+            StellaLink::setTechnicalState("sleeping");
+            break;
+        default:
+            StellaLink::setTechnicalState("idle");
+            break;
+    }
+}
+
+// Pre-init WiFi driver early to avoid later esp_wifi_init() failures after heap fragmentation.
 static void preInitWiFiDriverEarly() {
     WiFi.persistent(false);
-
-    // Force driver/buffers allocation while heap is still clean/contiguous
     WiFi.mode(WIFI_STA);
-
-    // Stop radio but keep driver initialized (buffers stay allocated).
-    // Signature: disconnect(bool wifioff, bool eraseap)
     WiFi.disconnect(true /* wifioff */, false /* eraseap */);
-
-    // No modem sleep to reduce odd timing/latency during TLS + UI load
     WiFi.setSleep(false);
-
     delay(HeapPolicy::kWiFiModeDelayMs);
 }
 
-// Reservation Fence: Force WiFi driver allocations to the TOP of heap,
+// Reservation Fence: Force WiFi driver allocations to the top of heap,
 // leaving a large contiguous region below for application use.
-//
-// Why this works: TLSF's good-fit strategy allocates from the lowest
-// available block. By occupying the bottom 80KB with a fence, the WiFi
-// driver's ~35KB of permanent DMA/RX buffers land above the fence.
-// When we free the fence, the bottom 80KB is contiguous free space.
-//
-// This replaces the old 5-phase alloc/free conditioning dance with a
-// deterministic, 3-line pattern that's both simpler and more effective.
 static void setupHeapLayout() {
     size_t beforeFree = ESP.getFreeHeap();
     size_t beforeLargest = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
     Serial.printf("[BOOT] Pre-fence heap: free=%u largest=%u\n",
                   (unsigned)beforeFree, (unsigned)beforeLargest);
 
-    // Allocate fence to push WiFi driver allocations high in the heap
     static constexpr size_t kFenceSize = 80000;
     void* fence = heap_caps_malloc(kFenceSize, MALLOC_CAP_8BIT);
     if (fence) {
@@ -72,13 +137,9 @@ static void setupHeapLayout() {
         Serial.println("[BOOT] WARNING: Fence allocation failed, falling back to direct init");
     }
 
-    // WiFi driver allocates its permanent DMA/RX buffers ABOVE the fence
     preInitWiFiDriverEarly();
 
-    // Release the fence — leaves large contiguous space below WiFi driver
-    if (fence) {
-        heap_caps_free(fence);
-    }
+    if (fence) heap_caps_free(fence);
 
     size_t afterFree = ESP.getFreeHeap();
     size_t afterLargest = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
@@ -89,73 +150,55 @@ static void setupHeapLayout() {
 void setup() {
     Serial.begin(115200);
     delay(100);
-    Serial.println("\n=== PORKCHOP STARTING ===");
+    Serial.println("\n=== STELLA WAKING UP ===");
+    Serial.printf("Device: %s | FW: %s | Protocol: v%u\n",
+                  StellaIdentity::kDeviceName,
+                  StellaIdentity::firmwareVersion(),
+                  StellaIdentity::kProtocolVersion);
 
     // Deassert CapLoRa SX1262 CS BEFORE SD init. The SX1262 shares
-    // MOSI(G14)/MISO(G39)/SCK(G40) with the SD card. If its CS floats low
-    // the SX1262 responds on the bus and SD.begin() fails with f_mount(3).
-    // MUST happen before M5Cardputer.begin() — GPIO5 is a keyboard matrix
-    // input on v1.1 and begin() needs to reconfigure it as INPUT_PULLUP.
+    // MOSI(G14)/MISO(G39)/SCK(G40) with the SD card.
     pinMode(5, OUTPUT);
     digitalWrite(5, HIGH);
 
-    // Init M5Cardputer hardware
     auto cfg = M5.config();
-    M5Cardputer.begin(cfg, true);   // enableKeyboard = true
+    M5Cardputer.begin(cfg, true);
 
-    // Configure G0 button (GPIO0) as input with pullup
     pinMode(0, INPUT_PULLUP);
 
-    // Reservation fence: push WiFi driver allocations high in heap, then free
-    // the fence to leave large contiguous space at the bottom.
-    // Replaces the old 5-phase boot conditioning with a deterministic layout.
     setupHeapLayout();
 
-    // Load configuration from SD
     if (!Config::init()) {
         Serial.println("[MAIN] Config init failed, using defaults");
     }
 
-    // Init SD logging (will be enabled via settings if user wants)
     SDLog::init();
-
-    // Load previous session watermarks before resetting peaks
     HeapHealth::loadPreviousSession();
 
-    // TLS reserve disabled: browser handles TLS, keep heap for UI/file transfer.
-
-    // Init display system
     Display::init();
-
-    // Init audio early so boot sound plays
     SFX::init();
 
-    // Show boot splash (3 screens: OINK OINK, MY NAME IS, PORKCHOP)
+    // Legacy splash renderer is retained temporarily; the Stella art pass will
+    // replace the old pig-specific frames rather than layering more hacks here.
     Display::showBootSplash();
 
-    // Apply saved brightness
     M5.Display.setBrightness(Config::personality().brightness * 255 / 100);
 
-    // Initialize piglet personality
+    // Legacy personality engine is still called Avatar/Mood internally during migration.
     Avatar::init();
     Mood::init();
 
-    // Initialize GPS (if enabled)
     if (Config::gps().enabled) {
-        // Hardware detection: warn if Cap LoRa GPS selected on non-ADV hardware
         if (Config::gps().source == GPSSource::CAP_LORA) {
             auto board = M5.getBoard();
             if (board != m5::board_t::board_M5CardputerADV) {
                 Serial.println("[GPS] WARNING: Cap LoRa868 GPS selected but hardware is not Cardputer ADV!");
                 Serial.println("[GPS] Cap LoRa868 requires Cardputer ADV EXT bus. Check config.");
             }
-            // Quiesce SX1262 and clear G13 FSPIQ IOMUX before GPS UART init.
-            // CapLoRa shares MOSI/MISO/SCK with SD; G13 is default FSPIQ pin.
             Config::prepareCapLoraGpio();
         }
         GPS::init(Config::gps().rxPin, Config::gps().txPin, Config::gps().baudRate);
 
-        // Re-verify SD after CapLoRa GPS UART init (UART on G13 may disturb FSPI bus)
         if (Config::gps().source == GPSSource::CAP_LORA) {
             Serial.println("[GPS] Re-verifying SD card after CapLoRa GPS UART init...");
             if (!Config::reinitSD()) {
@@ -164,37 +207,29 @@ void setup() {
         }
     }
 
-    // Initialize modes
     OinkMode::init();
     WarhogMode::init();
     porkchop.init();
 
-    Serial.println("=== PORKCHOP READY ===");
-    Serial.printf("Piglet: %s\n", Config::personality().name);
-    
-    // #region agent log
-    // [DEBUG] H1: Log heap after init to check static pool impact (~13KB expected reduction)
-    Serial.printf("[DBG-HEAP] After init: free=%u largest=%u\n", 
-                  (unsigned)ESP.getFreeHeap(), 
+    Serial.println("=== STELLA READY ===");
+    Serial.printf("Wardog: %s\n", Config::personality().name);
+
+    Serial.printf("[DBG-HEAP] After init: free=%u largest=%u\n",
+                  (unsigned)ESP.getFreeHeap(),
                   (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
-    // #endregion
-    
-    // Start background network reconnaissance service
-    // This stabilizes heap by running WiFi promiscuous mode early
-    // and provides shared network data for OINK/DONOHAM/SPECTRUM modes
+
     NetworkRecon::start();
 
-    // Reset heap health baseline to post-init state so the health bar
-    // starts at the REAL value, not 100%. Without this, the EMA slowly
-    // converges from 100% to reality, looking like a steady decline.
+    // W33Z integration is opt-in through /stella_link.json. With no config,
+    // the original offline firmware behavior remains untouched.
+    StellaLink::init(handleStellaCommand);
+
     HeapHealth::resetPeaks(true);
 }
 
 void loop() {
     M5Cardputer.update();
-    
-    // #region agent log
-    // [DEBUG] H1/H3: Periodic heap monitoring (every 5 seconds)
+
     static uint32_t lastHeapLog = 0;
     if (millis() - lastHeapLog > 5000) {
         lastHeapLog = millis();
@@ -203,9 +238,7 @@ void loop() {
                       (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT),
                       (unsigned)ESP.getMinFreeHeap());
     }
-    // #endregion
 
-    // Persist session watermarks to SD (rate-limited to 60s internally)
     HeapHealth::persistWatermarks();
 
     {
@@ -242,19 +275,14 @@ void loop() {
         }
     }
 
-    // Update GPS
-    if (Config::gps().enabled) {
-        GPS::update();
-    }
+    if (Config::gps().enabled) GPS::update();
 
-    // Update mood system
     Mood::update();
-
-    // Update main controller (handles modes, input, state)
     porkchop.update();
+    updateStellaTechnicalState();
 
-    // Update display
+    // Keeps Wi-Fi telemetry/heartbeat and W33Z command polling non-blocking.
+    StellaLink::update();
+
     Display::update();
-
-    // Slower update rate for smoother animation
 }

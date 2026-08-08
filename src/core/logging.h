@@ -1,19 +1,27 @@
 #pragma once
 
-#ifndef PORKCHOP_LOG_ENABLED
-#define PORKCHOP_LOG_ENABLED 1
+// Stella is migrating the original Porkchop core incrementally. New code uses
+// STELLA_LOG_ENABLED; legacy translation units still understand the old macro.
+#ifndef STELLA_LOG_ENABLED
+  #ifdef PORKCHOP_LOG_ENABLED
+    #define STELLA_LOG_ENABLED PORKCHOP_LOG_ENABLED
+  #else
+    #define STELLA_LOG_ENABLED 1
+  #endif
 #endif
 
-#if !PORKCHOP_LOG_ENABLED
+#ifndef PORKCHOP_LOG_ENABLED
+#define PORKCHOP_LOG_ENABLED STELLA_LOG_ENABLED
+#endif
+
+#if !STELLA_LOG_ENABLED
 #ifdef __cplusplus
-// Ensure core Serial is declared before we override it.
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
 
 #if !defined(ARDUINO_CORE_BUILD)
-// Compile-time Serial sink to disable all logging with minimal overhead.
-struct PorkchopNullSerial {
+struct StellaNullSerial {
     void begin(unsigned long, uint8_t = 0) {}
     void end() {}
     void flush() {}
@@ -43,9 +51,9 @@ struct PorkchopNullSerial {
     operator bool() const { return false; }
 };
 
-static PorkchopNullSerial PorkchopSerialSink;
+static StellaNullSerial StellaSerialSink;
 #undef Serial
-#define Serial PorkchopSerialSink
-#endif  // !ARDUINO_CORE_BUILD
-#endif  // __cplusplus
+#define Serial StellaSerialSink
+#endif
+#endif
 #endif

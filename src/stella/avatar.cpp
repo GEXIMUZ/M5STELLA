@@ -56,6 +56,8 @@ bool thunderFlashActive = false;
 uint32_t lastGrassStopTime = 0;
 constexpr uint32_t kSniffDurationMs = 720;
 constexpr uint32_t kGrassCooldownMs = 2500;
+constexpr int kGroundY = 99;       // Stella's paws live on this line in MAIN canvas.
+constexpr int kPomBaseY = 38;      // Body origin chosen so paws touch kGroundY.
 
 uint16_t accent() { return thunderFlashActive ? getColorBG() : getColorFG(); }
 uint16_t bg() { return thunderFlashActive ? getColorFG() : getColorBG(); }
@@ -65,22 +67,34 @@ uint16_t cream() { return thunderFlashActive ? getColorBG() : 0xFF9C; }
 uint16_t ink() { return thunderFlashActive ? getColorBG() : 0x0000; }
 uint16_t blush() { return thunderFlashActive ? getColorBG() : 0xF9B2; }
 
-void drawEye(M5Canvas& c, int x, int y, bool closed, bool angry) {
-    if (closed) { c.drawFastHLine(x - 2, y, 5, ink()); return; }
-    if (angry) c.drawLine(x - 3, y - 3, x + 2, y - 1, ink());
-    c.fillCircle(x, y, 3, ink());
+void drawEye(M5Canvas& c, int x, int y, bool closed, bool angry, bool happy) {
+    if (closed || happy) {
+        c.drawArc(x, y + (happy ? 1 : 0), 4, 2, 15, 165, ink());
+        return;
+    }
+    if (angry) c.drawLine(x - 4, y - 4, x + 2, y - 1, ink());
+    c.fillEllipse(x, y, 3, 4, ink());
     c.fillCircle(x + 1, y - 1, 1, 0xFFFF);
 }
 
+void drawGroundShadow(M5Canvas& c, int x, bool moving, bool airborne) {
+    if (airborne) return;
+    const int w = moving ? 42 : 48;
+    c.drawFastHLine(x + 8, kGroundY + 1, w, furDark());
+    c.drawFastHLine(x + 14, kGroundY + 2, w - 12, furDark());
+}
+
 void drawPlumeTail(M5Canvas& c, int x, int y, bool right, uint32_t now, AvatarState state) {
-    int wag = ((now / 120) % 3) - 1;
+    int wag = ((now / 105) % 5) - 2;
     if (state == AvatarState::SLEEPY || state == AvatarState::SAD) wag = 0;
-    int tx = right ? x - 13 : x + 52;
-    int dir = right ? -1 : 1;
-    c.fillCircle(tx, y - 3 + wag, 10, fur());
-    c.fillCircle(tx + dir * 7, y - 10 + wag, 9, fur());
-    c.fillCircle(tx + dir * 3, y - 17 + wag, 8, cream());
-    c.drawCircle(tx, y - 3 + wag, 10, furDark());
+    if (state == AvatarState::EXCITED) wag *= 2;
+    const int tx = right ? x - 5 : x + 62;
+    const int dir = right ? -1 : 1;
+    c.fillCircle(tx, y + wag, 11, furDark());
+    c.fillCircle(tx + dir * 7, y - 7 + wag, 11, fur());
+    c.fillCircle(tx + dir * 5, y - 16 + wag, 10, fur());
+    c.fillCircle(tx + dir * 1, y - 23 + wag, 8, cream());
+    c.drawArc(tx + dir * 1, y - 13 + wag, 18, 13, right ? 180 : 0, right ? 330 : 150, accent());
 }
 
 void drawPom(M5Canvas& c, int x, int y, bool right, bool blink, bool sniff, int yOff,
@@ -90,55 +104,88 @@ void drawPom(M5Canvas& c, int x, int y, bool right, bool blink, bool sniff, int 
     const bool sleepy = state == AvatarState::SLEEPY;
     const bool sad = state == AvatarState::SAD;
     const bool happy = state == AvatarState::HAPPY || state == AvatarState::EXCITED;
+    const bool excited = state == AvatarState::EXCITED;
     const bool tracking = state == AvatarState::HUNTING;
+    const bool moving = walking || grassMovingNow;
 
     y += yOff;
-    drawPlumeTail(c, x, y + 36, right, now, state);
+    const bool airborne = yOff < -2;
+    drawGroundShadow(c, x, moving, airborne);
 
-    c.fillCircle(x + 20, y + 36, 17, fur());
-    c.fillCircle(x + 35, y + 35, 18, fur());
-    c.fillCircle(x + 27, y + 27, 17, fur());
-    c.fillCircle(x + 27, y + 39, 11, cream());
-    c.drawCircle(x + 20, y + 36, 17, furDark());
-    c.drawCircle(x + 35, y + 35, 18, furDark());
+    // Big curled plume sits behind Stella, like a real Pom tail rather than a stick.
+    drawPlumeTail(c, x, y + 38, right, now, state);
 
-    int step = (walking || grassMovingNow) ? ((now / 120) & 1) : 0;
-    c.fillRoundRect(x + 15, y + 48 + step, 8, 12 - step, 3, furDark());
-    c.fillRoundRect(x + 37, y + 49 - step, 8, 11 + step, 3, furDark());
-    c.fillRoundRect(x + 14, y + 57, 11, 4, 2, cream());
-    c.fillRoundRect(x + 36, y + 57, 11, 4, 2, cream());
+    // Compact Pom body: broad fluffy ruff, small torso, short legs.
+    c.fillCircle(x + 28, y + 37, 18, fur());
+    c.fillCircle(x + 40, y + 39, 16, fur());
+    c.fillCircle(x + 22, y + 34, 13, fur());
+    c.fillCircle(x + 31, y + 31, 15, cream());
+    c.fillCircle(x + 31, y + 29, 17, fur());
+    c.fillEllipse(x + 31, y + 39, 15, 17, fur());
 
-    c.fillCircle(x + 31, y + 17, 19, fur());
-    c.fillCircle(x + 20, y + 21, 9, fur());
-    c.fillCircle(x + 42, y + 21, 9, fur());
+    // Textured outline tufts make the body less like one round blob.
+    c.drawLine(x + 13, y + 31, x + 8, y + 35, furDark());
+    c.drawLine(x + 15, y + 40, x + 10, y + 45, furDark());
+    c.drawLine(x + 46, y + 29, x + 53, y + 34, furDark());
+    c.drawLine(x + 47, y + 41, x + 54, y + 45, furDark());
 
+    // Short-legged Pom gait. Paws terminate exactly at the ground line.
+    int step = moving ? ((now / 115) & 1) : 0;
+    const int pawY = kGroundY - yOff;
+    int leftLegY = y + 49 + step;
+    int rightLegY = y + 49 - step;
+    int leftLegH = max(5, pawY - leftLegY - 2);
+    int rightLegH = max(5, pawY - rightLegY - 2);
+    c.fillRoundRect(x + 18, leftLegY, 8, leftLegH, 3, furDark());
+    c.fillRoundRect(x + 39, rightLegY, 8, rightLegH, 3, furDark());
+    c.fillRoundRect(x + 15, pawY - 3, 13, 4, 2, cream());
+    c.fillRoundRect(x + 37, pawY - 3, 13, 4, 2, cream());
+
+    // Fluffy head/ruff. Wider cheeks and a shorter fox muzzle read much more Pomeranian.
+    c.fillCircle(x + 31, y + 17, 20, fur());
+    c.fillCircle(x + 17, y + 22, 10, fur());
+    c.fillCircle(x + 45, y + 22, 10, fur());
+    c.fillCircle(x + 21, y + 30, 9, fur());
+    c.fillCircle(x + 42, y + 30, 9, fur());
+
+    // Pointed ears with independent folded/listening pose.
     if (earsUpNow) {
-        c.fillTriangle(x + 16, y + 8, x + 21, y - 8, x + 27, y + 8, fur());
-        c.fillTriangle(x + 35, y + 7, x + 42, y - 9, x + 47, y + 9, fur());
-        c.fillTriangle(x + 19, y + 5, x + 22, y - 3, x + 25, y + 6, blush());
-        c.fillTriangle(x + 38, y + 5, x + 42, y - 4, x + 44, y + 7, blush());
+        c.fillTriangle(x + 14, y + 9, x + 20, y - 10, x + 28, y + 9, furDark());
+        c.fillTriangle(x + 34, y + 8, x + 43, y - 11, x + 49, y + 10, furDark());
+        c.fillTriangle(x + 18, y + 6, x + 21, y - 4, x + 25, y + 7, blush());
+        c.fillTriangle(x + 38, y + 6, x + 43, y - 5, x + 46, y + 7, blush());
     } else {
-        c.fillTriangle(x + 17, y + 7, x + 15, y - 2, x + 28, y + 8, fur());
-        c.fillTriangle(x + 35, y + 8, x + 47, y - 1, x + 45, y + 9, fur());
+        c.fillTriangle(x + 15, y + 8, x + 12, y - 1, x + 29, y + 9, fur());
+        c.fillTriangle(x + 34, y + 9, x + 50, y - 1, x + 48, y + 10, fur());
     }
 
-    c.fillCircle(x + 25, y + 21, 9, cream());
-    c.fillCircle(x + 37, y + 21, 9, cream());
-    c.fillEllipse(x + 31, y + 26, 12, 8, cream());
+    // Cream mask and compact muzzle.
+    c.fillCircle(x + 23, y + 22, 9, cream());
+    c.fillCircle(x + 39, y + 22, 9, cream());
+    c.fillEllipse(x + 31, y + 27, 10, 7, cream());
 
-    int lx = right ? x + 24 : x + 38;
-    int rx = right ? x + 38 : x + 24;
-    drawEye(c, lx, y + 15, blink || sleepy, angry);
-    drawEye(c, rx, y + 15, blink || sleepy, angry);
+    const int lx = x + 24;
+    const int rx = x + 38;
+    drawEye(c, lx, y + 15, blink || sleepy, angry, happy && !excited);
+    drawEye(c, rx, y + 15, blink || sleepy, angry, happy && !excited);
 
+    // Sniff is a head/nose action, not just a symbol swap.
     int nosePush = 0;
     if (sniff) nosePush = sniffFrame == 1 ? 2 : (sniffFrame == 2 ? 4 : 1);
-    int noseX = x + 31 + (right ? nosePush : -nosePush);
-    c.fillCircle(noseX, y + 24, tracking ? 4 : 3, ink());
+    const int noseX = x + 31 + (right ? nosePush : -nosePush);
+    c.fillEllipse(noseX, y + 25, tracking ? 4 : 3, 3, ink());
+    if (sniff && sniffFrame == 2) {
+        int sx = right ? noseX + 7 : noseX - 7;
+        c.drawCircle(sx, y + 24, 2, accent());
+        c.drawCircle(sx, y + 24, 5, accent());
+    }
 
-    if (happy) {
+    // Mouth and tongue states.
+    if (excited) {
+        c.drawArc(x + 31, y + 29, 7, 5, 5, 175, ink());
+        c.fillRoundRect(x + 29, y + 31, 5, 5, 2, blush());
+    } else if (happy) {
         c.drawArc(x + 31, y + 29, 7, 4, 15, 165, ink());
-        if (state == AvatarState::EXCITED) c.fillCircle(x + 31, y + 32, 2, blush());
     } else if (sad) {
         c.drawArc(x + 31, y + 34, 7, 4, 195, 345, ink());
     } else if (angry) {
@@ -149,11 +196,12 @@ void drawPom(M5Canvas& c, int x, int y, bool right, bool blink, bool sniff, int 
         c.drawArc(x + 31, y + 29, 5, 3, 20, 160, ink());
     }
 
-    c.drawFastHLine(x + 19, y + 33, 24, accent());
-    c.fillCircle(x + 31, y + 36, 3, accent());
+    // Collar and W33Z tag anchor the mascot to Stella/W33Z visually.
+    c.drawFastHLine(x + 18, y + 34, 26, accent());
+    c.fillCircle(x + 31, y + 37, 3, accent());
 
     if (tracking) {
-        int sx = right ? x + 50 : x + 12;
+        int sx = right ? x + 54 : x + 8;
         c.drawCircle(sx, y + 24, 3, accent());
         c.drawCircle(sx, y + 24, 6, accent());
     }
@@ -196,7 +244,6 @@ bool Avatar::isTransitioning() { return transitioning; }
 int Avatar::getCurrentX() { return currentX; }
 void Avatar::blink() { isBlinking = true; }
 void Avatar::wiggleEars() { earsUp = !earsUp; }
-
 void Avatar::sniff() { isSniffing = true; sniffStartTime = millis(); sniffFrame = 0; }
 void Avatar::cuteJump() { jumpActive = true; jumpStartTime = millis(); }
 
@@ -237,19 +284,20 @@ void Avatar::draw(M5Canvas& canvas) {
     if (!transitioning && !grassMoving && !pendingGrassStart) {
         if (now - lastLookTime > lookInterval) {
             const int roll = random(0, 100);
-            if (roll < 35) facingRight = !facingRight;
-            else if (roll < 58) sniff();
-            else if (roll < 75) wiggleEars();
-            else if (roll < 88) blink();
+            if (roll < 28) facingRight = !facingRight;
+            else if (roll < 52) sniff();
+            else if (roll < 70) wiggleEars();
+            else if (roll < 84) blink();
+            else if (roll < 90 && currentState == AvatarState::HAPPY) cuteJump();
             lastLookTime = now;
-            lookInterval = random(3000, 10000);
+            lookInterval = random(2800, 9000);
         }
 
         if (now - lastWalkTime > walkInterval) {
             const int target = onRightSide ? 20 : 154;
             startWindupSlide(target, target > currentX);
             lastWalkTime = now;
-            walkInterval = random(20000, 50000);
+            walkInterval = random(18000, 44000);
         }
     }
 
@@ -275,14 +323,15 @@ void Avatar::drawFrame(M5Canvas& canvas, const char**, uint8_t, bool doBlink, bo
         const float t = (float)(now - jumpStartTime) / (float)JUMP_DURATION_MS;
         yOffset = -(int)(4.0f * t * (1.0f - t) * JUMP_HEIGHT);
     } else if (attackShakeActive) {
-        const int amp = attackShakeStrong ? 6 : 3;
+        const int amp = attackShakeStrong ? 5 : 2;
         yOffset = (esp_random() & 1) ? amp : -amp;
     } else if (transitioning || grassMoving) {
-        static const int bounce[4] = {0, -1, -2, -1};
-        yOffset = bounce[(now / 100) % 4];
+        // Tiny gait bounce only; paws still visually meet the scrolling ground.
+        static const int bounce[4] = {0, -1, 0, -1};
+        yOffset = bounce[(now / 105) % 4];
     }
 
-    drawPom(canvas, currentX, 24, faceRight, doBlink, doSniff, yOffset,
+    drawPom(canvas, currentX, kPomBaseY, faceRight, doBlink, doSniff, yOffset,
             currentState, transitioning, grassMoving, earsUp);
     drawGrass(canvas);
 }
@@ -337,10 +386,23 @@ void Avatar::updateGrass() {
 }
 void Avatar::drawGrass(M5Canvas& canvas) {
     updateGrass();
+
+    // Ground is now an actual scene layer, not text floating under Stella.
+    canvas.drawFastHLine(0, kGroundY + 2, 240, accent());
+    canvas.drawFastHLine(0, kGroundY + 4, 240, furDark());
+
+    // Keep the original scrolling /\\ grass character, but anchor blade tips at the paw line.
     canvas.setTextSize(2);
     canvas.setTextColor(accent());
     canvas.setTextDatum(top_left);
-    canvas.drawString(grassPattern, 0, 111);
+    canvas.drawString(grassPattern, 0, kGroundY - 5);
+
+    // Sparse foreground tufts add depth without killing the clean terminal aesthetic.
+    for (int x = 4; x < 240; x += 24) {
+        int sway = grassMoving ? (((millis() / 140) + x) & 1) : 0;
+        canvas.drawLine(x, kGroundY + 2, x - 3 + sway, kGroundY - 3, accent());
+        canvas.drawLine(x + 4, kGroundY + 2, x + 7 - sway, kGroundY - 4, accent());
+    }
 }
 
 bool Avatar::isNightTime() {
@@ -364,7 +426,7 @@ bool Avatar::isNightTime() {
 bool Avatar::areStarsActive() { return starsActive; }
 void Avatar::initStarPositions() {
     for (uint8_t i = 0; i < MAX_STARS; ++i) {
-        stars[i].x = random(4, 236); stars[i].y = random(20, 100); stars[i].size = random(1, 3);
+        stars[i].x = random(4, 236); stars[i].y = random(6, 82); stars[i].size = random(1, 3);
         stars[i].brightness = 0; stars[i].isBlinking = random(0, 100) < 50; stars[i].fadeInStart = 0;
     }
 }
@@ -386,7 +448,8 @@ void Avatar::drawStars(M5Canvas& canvas) {
     }
 }
 void Avatar::fillPigBoundingBox(M5Canvas& canvas) {
-    canvas.fillRect(0, 15, 240, 100, bg());
+    // Legacy API name only. Clear the full Stella scene, including grounded grass area.
+    canvas.fillRect(0, 0, 240, 112, bg());
 }
 void Avatar::setFacingLeft() { facingRight = false; }
 void Avatar::setFacingRight() { facingRight = true; }

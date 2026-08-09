@@ -17,11 +17,14 @@
 namespace StellaLink {
 namespace {
 
+static constexpr const char* kDefaultW33zBaseUrl = "https://w33z.gexz.be";
+static constexpr size_t kMaxUsbLineLength = 1536;
+
 struct LinkConfig {
-    bool enabled = false;
-    bool wifiAutoConnect = false;
+    bool enabled = true;
+    bool wifiAutoConnect = true;
     bool tlsInsecure = true;
-    String baseUrl;
+    String baseUrl = kDefaultW33zBaseUrl;
     String pairingCode;
     uint32_t heartbeatMs = 5000;
     uint32_t commandPollMs = 1500;
@@ -34,6 +37,7 @@ String id;
 String errorText;
 String state = "idle";
 String bearerToken;
+String usbRxLine;
 bool registered = false;
 uint32_t lastHeartbeat = 0;
 uint32_t lastCommandPoll = 0;
@@ -69,10 +73,13 @@ bool readConfigDocument(JsonDocument& doc) {
     return true;
 }
 
-void loadStoredToken() {
-    if (!prefs.begin("stella-link", false)) return;
+void loadStoredProvisioning() {
+    if (!prefs.begin("stella-link", true)) return;
     bearerToken = prefs.getString("token", "");
+    const String storedBaseUrl = prefs.getString("base-url", "");
     prefs.end();
+
+    if (!storedBaseUrl.isEmpty()) cfg.baseUrl = trimSlash(storedBaseUrl);
 }
 
 void saveStoredToken(const String& token) {
@@ -83,28 +90,72 @@ void saveStoredToken(const String& token) {
     bearerToken = token;
 }
 
+bool saveUsbProvisioning(const String& token, const String& baseUrl) {
+    String cleanToken = token;
+    cleanToken.trim();
+    String cleanUrl = trimSlash(baseUrl);
+
+    // Current W33Z tokens are 32 random bytes encoded as 64 hex chars. Keep
+    // validation slightly future-proof while still rejecting accidental input.
+    if (cleanToken.length() < 32) {
+        errorText = "USB enrollment token is invalid.";
+        return false;
+    }
+    if (!cleanUrl.startsWith("https://") && !cleanUrl.startsWith("http://")) {
+        errorText = "USB enrollment URL is invalid.";
+        return false;
+    }
+
+    if (!prefs.begin("stella-link", false)) {
+        errorText = "Could not open Stella NVS.";
+        return false;
+    }
+    prefs.putString("token", cleanToken);
+    prefs.putString("base-url", cleanUrl);
+    prefs.end();
+
+    bearerToken = cleanToken;
+    cfg.baseUrl = cleanUrl;
+    cfg.enabled = true;
+    cfg.wifiAutoConnect = true;
+    cfg.pairingCode = "";
+    registered = false;
+    forceCycle = true;
+    lastHeartbeat = 0;
+    lastCommandPoll = 0;
+    errorText = "";
+    return true;
+}
+
 void loadConfig() {
     JsonDocument doc;
     if (!readConfigDocument(doc)) {
-        cfg.enabled = false;
-        if (errorText.isEmpty()) errorText = "No /stella_link.json; W33Z link disabled.";
+        // First-party defaults: USB enrollment + NVS is the normal path.
+        // No SD-card config file is required.
+        cfg.enabled = true;
+        cfg.wifiAutoConnect = true;
+        cfg.tlsInsecure = true;
+        if (cfg.baseUrl.isEmpty()) cfg.baseUrl = kDefaultW33zBaseUrl;
+        cfg.pairingCode = "";
+        cfg.heartbeatMs = 5000;
+        cfg.commandPollMs = 1500;
+        cfg.reconnectMs = 10000;
+        errorText = "";
         return;
     }
 
-    cfg.enabled = doc["enabled"] | false;
-    cfg.wifiAutoConnect = doc["wifiAutoConnect"] | false;
+    cfg.enabled = doc["enabled"] | true;
+    cfg.wifiAutoConnect = doc["wifiAutoConnect"] | true;
     cfg.tlsInsecure = doc["tlsInsecure"] | true;
-    cfg.baseUrl = trimSlash(String((const char*)(doc["baseUrl"] | "")));
+    cfg.baseUrl = trimSlash(String((const char*)(doc["baseUrl"] | cfg.baseUrl.c_str())));
     cfg.pairingCode = String((const char*)(doc["pairingCode"] | ""));
     cfg.pairingCode.trim();
     cfg.heartbeatMs = constrain((uint32_t)(doc["heartbeatMs"] | 5000), 2000UL, 60000UL);
     cfg.commandPollMs = constrain((uint32_t)(doc["commandPollMs"] | 1500), 500UL, 30000UL);
     cfg.reconnectMs = constrain((uint32_t)(doc["reconnectMs"] | 10000), 3000UL, 120000UL);
 
-    if (cfg.enabled && cfg.baseUrl.isEmpty()) {
-        cfg.enabled = false;
-        errorText = "W33Z link enabled but baseUrl is empty.";
-    } else if (cfg.enabled && !cfg.baseUrl.startsWith("http://") && !cfg.baseUrl.startsWith("https://")) {
+    if (cfg.baseUrl.isEmpty()) cfg.baseUrl = kDefaultW33zBaseUrl;
+    if (!cfg.baseUrl.startsWith("http://") && !cfg.baseUrl.startsWith("https://")) {
         cfg.enabled = false;
         errorText = "W33Z baseUrl must start with http:// or https://";
     }
@@ -116,11 +167,11 @@ bool ensureWifi() {
 
     const WiFiConfig& wifi = Config::wifi();
     if (wifi.otaSSID[0] == '\0') {
-        errorText = "wifiAutoConnect requested but no Wi-Fi SSID is configured.";
+        errorText = "No Wi-Fi SSID configured for W33Z.";
         return false;
     }
 
-    uint32_t now = millis();
+    const uint32_t now = millis();
     if (now - lastReconnectAttempt < cfg.reconnectMs) return false;
     lastReconnectAttempt = now;
 
@@ -132,7 +183,7 @@ bool ensureWifi() {
 }
 
 void addTelemetry(JsonObject telemetry) {
-    telemetry["connected"] = true;
+    telemetry["connected"] = WiFi.status() == WL_CONNECTED;
     telemetry["state"] = state;
     telemetry["batteryPercent"] = M5.Power.getBatteryLevel();
 
@@ -148,6 +199,83 @@ void addTelemetry(JsonObject telemetry) {
         if (data.fix) {
             gps["latitude"] = data.latitude;
             gps["longitude"] = data.longitude;
+        }
+    }
+}
+
+void emitUsbHello() {
+    JsonDocument doc;
+    doc["type"] = "stella.hello";
+    doc["protocolVersion"] = StellaIdentity::kProtocolVersion;
+
+    JsonObject identity = doc["identity"].to<JsonObject>();
+    identity["deviceId"] = id;
+    identity["name"] = StellaIdentity::kDeviceName;
+    identity["model"] = StellaIdentity::kModel;
+    identity["hardwareRevision"] = StellaIdentity::kHardwareRevision;
+    identity["firmwareVersion"] = StellaIdentity::firmwareVersion();
+    identity["protocolVersion"] = StellaIdentity::kProtocolVersion;
+    JsonArray capabilities = identity["capabilities"].to<JsonArray>();
+    for (size_t i = 0; i < StellaIdentity::kCapabilityCount; ++i) {
+        capabilities.add(StellaIdentity::kCapabilities[i]);
+    }
+
+    JsonObject telemetry = doc["telemetry"].to<JsonObject>();
+    addTelemetry(telemetry);
+
+    serializeJson(doc, Serial);
+    Serial.println();
+}
+
+void emitUsbEnrollResult(bool ok, const String& message) {
+    JsonDocument doc;
+    doc["type"] = "stella.enrolled";
+    doc["success"] = ok;
+    doc["deviceId"] = id;
+    if (!ok) doc["error"] = message;
+    serializeJson(doc, Serial);
+    Serial.println();
+}
+
+void processUsbCommand(const String& line) {
+    JsonDocument doc;
+    const DeserializationError err = deserializeJson(doc, line);
+    if (err) return; // Ignore normal firmware log/noise safely.
+
+    const String type = String((const char*)(doc["type"] | ""));
+    if (type == "hello") {
+        emitUsbHello();
+        return;
+    }
+
+    if (type == "enroll") {
+        const String token = String((const char*)(doc["token"] | ""));
+        const String url = String((const char*)(doc["baseUrl"] | kDefaultW33zBaseUrl));
+        const bool ok = saveUsbProvisioning(token, url);
+        emitUsbEnrollResult(ok, ok ? String() : errorText);
+        if (ok) {
+            Serial.printf("[STELLA] USB enrollment stored for %s -> %s\n", id.c_str(), cfg.baseUrl.c_str());
+        }
+    }
+}
+
+void serviceUsbBootstrapInternal() {
+    while (Serial.available() > 0) {
+        const char c = static_cast<char>(Serial.read());
+        if (c == '\r') continue;
+
+        if (c == '\n') {
+            usbRxLine.trim();
+            if (!usbRxLine.isEmpty()) processUsbCommand(usbRxLine);
+            usbRxLine = "";
+            continue;
+        }
+
+        if (usbRxLine.length() < kMaxUsbLineLength) {
+            usbRxLine += c;
+        } else {
+            // Drop oversized/malformed input and resynchronize at next newline.
+            usbRxLine = "";
         }
     }
 }
@@ -174,7 +302,7 @@ bool beginHttp(HTTPClient& http, WiFiClientSecure& secure, const String& url) {
 }
 
 bool postJson(const String& path, const String& payload, String* response = nullptr) {
-    if (WiFi.status() != WL_CONNECTED) return false;
+    if (WiFi.status() != WL_CONNECTED || bearerToken.isEmpty()) return false;
 
     HTTPClient http;
     WiFiClientSecure secure;
@@ -201,7 +329,7 @@ bool postJson(const String& path, const String& payload, String* response = null
 }
 
 bool getJson(const String& path, String& response) {
-    if (WiFi.status() != WL_CONNECTED) return false;
+    if (WiFi.status() != WL_CONNECTED || bearerToken.isEmpty()) return false;
 
     HTTPClient http;
     WiFiClientSecure secure;
@@ -227,9 +355,10 @@ bool getJson(const String& path, String& response) {
 }
 
 bool sendHandshake() {
+    if (bearerToken.isEmpty()) return false;
+
     JsonDocument doc;
     doc["transport"] = "wifi";
-    if (bearerToken.isEmpty() && !cfg.pairingCode.isEmpty()) doc["pairingCode"] = cfg.pairingCode;
 
     JsonObject handshake = doc["handshake"].to<JsonObject>();
     handshake["protocolVersion"] = StellaIdentity::kProtocolVersion;
@@ -262,10 +391,12 @@ bool sendHandshake() {
         return false;
     }
 
+    // Pairing normally happens over USB. Keep support for a future server-side
+    // token rotation response without changing the transport contract.
     const char* issuedToken = reply["token"] | nullptr;
     if (issuedToken && *issuedToken) {
         saveStoredToken(String(issuedToken));
-        Serial.println("[STELLA] W33Z pairing token stored in NVS.");
+        Serial.println("[STELLA] Rotated W33Z token stored in NVS.");
     }
 
     registered = true;
@@ -357,22 +488,37 @@ void pollCommands() {
 void init(CommandHandler handler) {
     commandHandler = handler;
     id = StellaIdentity::deviceId();
-    loadStoredToken();
+    loadStoredProvisioning();
     loadConfig();
 
     Serial.printf("[STELLA] Identity: %s / fw %s / protocol v%u\n",
                   id.c_str(), StellaIdentity::firmwareVersion(), StellaIdentity::kProtocolVersion);
+    Serial.printf("[STELLA] W33Z USB bootstrap ready | paired=%s | endpoint=%s\n",
+                  bearerToken.isEmpty() ? "no" : "yes", cfg.baseUrl.c_str());
+
     if (!cfg.enabled) {
-        Serial.printf("[STELLA] W33Z link disabled: %s\n", errorText.c_str());
-        return;
+        Serial.printf("[STELLA] W33Z Wi-Fi link disabled by config: %s\n", errorText.c_str());
     }
-    Serial.printf("[STELLA] W33Z link enabled -> %s | paired=%s\n",
-                  cfg.baseUrl.c_str(), bearerToken.isEmpty() ? "no" : "yes");
-    forceCycle = true;
+
+    // Only enrolled devices may enter the Wi-Fi/TLS state machine.
+    forceCycle = !bearerToken.isEmpty();
+}
+
+void serviceUsbBootstrap() {
+    serviceUsbBootstrapInternal();
 }
 
 void update() {
+    // Keep this call too so callers that do not use main.cpp's priority service
+    // still get USB bootstrap handling.
+    serviceUsbBootstrapInternal();
+
     if (!cfg.enabled) return;
+
+    // CRITICAL: USB is the trust bootstrap. Never allocate Wi-Fi/TLS resources
+    // merely because Stella booted. This also prevents pre-pair TLS heap spam.
+    if (bearerToken.isEmpty()) return;
+
     if (!ensureWifi()) return;
 
     const uint32_t now = millis();
@@ -391,6 +537,7 @@ void update() {
 bool isEnabled() { return cfg.enabled; }
 bool isConnected() { return WiFi.status() == WL_CONNECTED; }
 bool isRegistered() { return registered; }
+bool isPaired() { return !bearerToken.isEmpty(); }
 const String& baseUrl() { return cfg.baseUrl; }
 const String& deviceId() { return id; }
 const String& lastError() { return errorText; }
@@ -400,6 +547,8 @@ void setTechnicalState(const char* nextState) {
     state = nextState;
 }
 
-void nudge() { forceCycle = true; }
+void nudge() {
+    if (!bearerToken.isEmpty()) forceCycle = true;
+}
 
 } // namespace StellaLink

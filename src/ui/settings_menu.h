@@ -23,6 +23,11 @@ public:
     static bool shouldExit() { return exitRequested; }
     static void clearExit() { exitRequested = false; }
     static const char* getSelectedDescription();
+
+    // Trusted local device-console navigation. This mirrors the physical
+    // up/down/enter/back controls for the existing settings UI. Text secrets
+    // remain physical-keyboard-only in the first remote-console version.
+    static void handleRemoteAction(const char* action);
     
 private:
     static bool active;

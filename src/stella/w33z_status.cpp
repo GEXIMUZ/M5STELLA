@@ -7,6 +7,11 @@
 namespace StellaLink {
 
 void showSyncStatus() {
+    // Radio ownership is maintained continuously inside StellaLink::update().
+    // Keeping it there avoids a second FreeRTOS task and guarantees that recon
+    // cannot silently resume while the W33Z Sync screen is still active.
+    nudge();
+
     String top;
     String body = "W33Z SYNC\n";
 

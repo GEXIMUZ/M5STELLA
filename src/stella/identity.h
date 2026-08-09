@@ -38,15 +38,15 @@ static constexpr const char* System = "SYSTEM";
 }
 
 namespace Modes {
-static constexpr const char* Bite = "BITE";
-static constexpr const char* Sniff = "SNIFF";
-static constexpr const char* Patrol = "PATROL";
-static constexpr const char* BluePaws = "BLUE PAWS";
-static constexpr const char* Airwatch = "AIRWATCH";
-static constexpr const char* PackLink = "PACK LINK";
-static constexpr const char* Howl = "HOWL";
-static constexpr const char* FriendlyPack = "FRIENDLY PACK";
-static constexpr const char* WardogStats = "WARDOG STATS";
+static constexpr const char* Bite = "WIFI ATTACK";
+static constexpr const char* Sniff = "PASSIVE WIFI";
+static constexpr const char* Patrol = "WARDRIVING";
+static constexpr const char* BluePaws = "BLE TOOLS";
+static constexpr const char* Airwatch = "SPECTRUM";
+static constexpr const char* PackLink = "W33Z SYNC";
+static constexpr const char* Howl = "RF BEACON";
+static constexpr const char* FriendlyPack = "TRUSTED NETS";
+static constexpr const char* WardogStats = "STATS";
 static constexpr const char* About = "ABOUT STELLA";
 }
 

@@ -12,60 +12,60 @@
 // ============================================================================
 
 static const char* const H_ATTACK[] = {
-    "WARDOG TOOLS. HANDLE WITH INTENT.",
-    "AUTHORIZED RANGE. SHARP TEETH.",
-    "CONTROL THE AIR. KEEP YOUR SCOPE."
+    "ACTIVE WIFI AND BLE ASSESSMENT TOOLS.",
+    "USE ONLY ON AUTHORIZED NETWORKS.",
+    "SELECT AN ACTIVE TEST MODE."
 };
 static const char* const H_RECON[] = {
-    "NOSE UP. EARS OPEN. TX QUIET.",
-    "SNIFF FIRST. BITE ONLY IN SCOPE.",
-    "READ THE AIR BEFORE YOU TOUCH IT."
+    "PASSIVE WIFI, GPS AND RF ANALYSIS.",
+    "OBSERVE NETWORKS WITHOUT ACTIVE ATTACKS.",
+    "SELECT A RECONNAISSANCE MODE."
 };
 static const char* const H_LOOT[] = {
-    "CAPTURES, TRACKS AND FINDINGS.",
-    "FETCH THE DATA. KEEP THE EVIDENCE.",
-    "EVERY GOOD DOG BRINGS SOMETHING HOME."
+    "CAPTURES, GPS TRACKS AND TARGET NOTES.",
+    "REVIEW DATA COLLECTED IN THE FIELD.",
+    "OPEN SAVED RESULTS."
 };
 static const char* const H_RANK[] = {
-    "WARDOG XP. FIELD CRED. BADGES.",
-    "GOOD DOGS LEARN. GREAT DOGS LOG.",
-    "PROGRESS SAVED. EGO OPTIONAL."
+    "XP, ACHIEVEMENTS AND UNLOCKABLES.",
+    "REVIEW LONG-TERM DEVICE PROGRESS.",
+    "OPEN PROGRESS DATA."
 };
 static const char* const H_COMMS[] = {
-    "PACK LINK TO W33Z AND FRIENDS.",
-    "FETCH, DELIVER, SYNC, REPEAT.",
-    "ON LEASH WHEN W33Z IS LISTENING."
+    "W33Z SYNC, RF BEACON AND FILE TRANSFER.",
+    "MOVE DATA BETWEEN STELLA AND OTHER SYSTEMS.",
+    "SELECT A COMMUNICATION TOOL."
 };
 static const char* const H_SYSTEM[] = {
-    "COLLAR, HEALTH, STORAGE, DIAGNOSTICS.",
-    "KEEP STELLA SHARP AND FED WITH POWER.",
-    "CHECK THE DOG BEFORE BLAMING THE AIR."
+    "SETTINGS, STORAGE AND DIAGNOSTICS.",
+    "MANAGE DEVICE CONFIGURATION AND HEALTH.",
+    "SELECT A SYSTEM TOOL."
 };
 
 static const char* const H_OINK[] = {
-    "BITE MODE: AUTHORIZED ACTIVE ASSESSMENT.",
-    "TEETH OUT ONLY INSIDE YOUR SCOPE.",
+    "ACTIVE WIFI ASSESSMENT.",
+    "USE ONLY INSIDE YOUR AUTHORIZED SCOPE.",
     "ACTIVE RF WORK. LOG EVERYTHING."
 };
 static const char* const H_BLUES[] = {
-    "BLUE PAWS: BLE RECON AND TOOLING.",
-    "SNIFF THE SHORT-RANGE PACK.",
-    "BLE AIRSPACE, NOW WITH MORE PAWS."
+    "BLUETOOTH LOW ENERGY TOOLS.",
+    "SCAN AND ANALYZE BLE DEVICES.",
+    "SHORT-RANGE WIRELESS RECON."
 };
 static const char* const H_DNOHAM[] = {
-    "SNIFF: PASSIVE WIFI INTELLIGENCE.",
-    "ZERO TX. MAXIMUM NOSE.",
-    "QUIET DOG. LOUD DATA."
+    "PASSIVE WIFI INTELLIGENCE.",
+    "NO ACTIVE ATTACK TRAFFIC.",
+    "MONITOR NETWORK ACTIVITY QUIETLY."
 };
 static const char* const H_WARHOG[] = {
-    "PATROL: GPS WARDIVING IN MOTION.",
-    "TRACK STREETS. MARK RF TERRITORY.",
-    "STELLA WALKS. W33Z REMEMBERS."
+    "GPS-ASSISTED WIFI WARDRIVING.",
+    "LOG NETWORKS AND LOCATION DATA.",
+    "EXPORT TRACKS FOR LATER ANALYSIS."
 };
 static const char* const H_SPCTRM[] = {
-    "AIRWATCH: READ CHANNEL PRESSURE.",
-    "SEE THE RF NOISE BEFORE IT BITES.",
-    "CHANNELS TALK. STELLA LISTENS."
+    "2.4 GHZ SPECTRUM AND CHANNEL VIEW.",
+    "INSPECT CHANNEL UTILIZATION AND NOISE.",
+    "ANALYZE RF ACTIVITY."
 };
 static const char* const H_HASHES[] = {
     "CAPTURE VAULT FEED FOR W33Z.",
@@ -74,7 +74,7 @@ static const char* const H_HASHES[] = {
 };
 static const char* const H_TRACKS[] = {
     "PATROL TRAILS, GPS AND WIGLE DATA.",
-    "FOLLOW THE PAWPRINTS ON THE MAP.",
+    "REVIEW RECORDED WARDRIVING ROUTES.",
     "ROUTES BECOME RF HISTORY."
 };
 static const char* const H_BOUNTY[] = {
@@ -83,19 +83,19 @@ static const char* const H_BOUNTY[] = {
     "NO RANDOM PREY. USE A PROJECT SCOPE."
 };
 static const char* const H_SYNC[] = {
-    "PACK LINK: STELLA <-> W33Z.",
-    "FETCH DATA. DELIVER CONFIG.",
-    "W33Z.GEXZ.BE IS THE HOME KENNEL."
+    "SYNC STELLA WITH W33Z.",
+    "UPLOAD DATA AND RECEIVE CONFIGURATION.",
+    "CONTROL PLANE: W33Z.GEXZ.BE."
 };
 static const char* const H_BACONTX[] = {
-    "HOWL: RF BEACON AND SIGNAL TOOLING.",
+    "RF BEACON AND SIGNAL TOOLING.",
     "MAKE NOISE ONLY WHERE YOU ARE ALLOWED.",
-    "LOUD DOG. CONTROLLED RANGE."
+    "CONTROLLED-RANGE RF TESTING."
 };
 static const char* const H_XFIL[] = {
-    "FETCH FILES OFF STELLA.",
-    "DELIVER CAPTURES TO W33Z.",
-    "MOVE DATA WITHOUT LOSING THE TRAIL."
+    "TRANSFER FILES TO OR FROM STELLA.",
+    "MOVE CAPTURES, LOGS AND CONFIG FILES.",
+    "LOCAL FILE MANAGEMENT."
 };
 static const char* const H_FLEX[] = {
     "WARDOG STATS AND FIELD PROGRESS.",
@@ -103,24 +103,24 @@ static const char* const H_FLEX[] = {
     "XP IS TEMPORARY. LOGS ARE FOREVER."
 };
 static const char* const H_BADGES[] = {
-    "BADGES FOR ACTUAL FIELD MILESTONES.",
-    "GOOD DOG CERTIFICATES, BASICALLY.",
-    "UNLOCKED BY WORK, NOT BY OINKING."
+    "ACHIEVEMENTS FOR FIELD MILESTONES.",
+    "TRACK COMPLETED OBJECTIVES.",
+    "UNLOCKED THROUGH DEVICE ACTIVITY."
 };
 static const char* const H_SNOUTS[] = {
-    "STELLA UNLOCKS AND COLLECTIBLES.",
-    "NEW TRICKS FOR A BUSY WARDOG.",
-    "THE PAWPRINT ARCHIVE."
+    "UNLOCKABLE FEATURES AND COLLECTIBLES.",
+    "REVIEW UNLOCKED CONTENT.",
+    "PROGRESSION REWARDS."
 };
 static const char* const H_SETTINGS[] = {
-    "COLLAR SETTINGS FOR YOUR WARDOG.",
-    "TUNE IT. TEST IT. KEEP IT STABLE.",
-    "PERSONALITY, RADIOS, LINK AND POWER."
+    "DEVICE SETTINGS.",
+    "CONFIGURE RADIOS, SERVICES AND POWER.",
+    "REVIEW SYSTEM PREFERENCES."
 };
 static const char* const H_BRBRS[] = {
-    "FRIENDLY PACK: NEVER BITE THESE.",
-    "TRUSTED BSSIDS, SSIDS AND DEVICES.",
-    "GOOD DOGS KNOW THEIR FRIENDS."
+    "TRUSTED NETWORK EXCLUSIONS.",
+    "MANAGE TRUSTED BSSIDS AND SSIDS.",
+    "EXCLUDED TARGETS ARE NOT ATTACKED."
 };
 static const char* const H_CRASHES[] = {
     "COREDUMPS: WHEN STELLA FALLS OVER.",
@@ -128,9 +128,9 @@ static const char* const H_CRASHES[] = {
     "DEBUG THE CRASH, NOT THE DOG."
 };
 static const char* const H_DIAG[] = {
-    "WARDOG HEALTH AND LIVE DIAGNOSTICS.",
+    "DEVICE HEALTH AND LIVE DIAGNOSTICS.",
     "HEAP, RADIO, STORAGE, LINK, BATTERY.",
-    "CHECK VITALS BEFORE A LONG PATROL."
+    "CHECK SYSTEM STATE AND RESOURCES."
 };
 static const char* const H_SDFMT[] = {
     "FORMAT THE FIELD STORAGE.",
@@ -139,22 +139,22 @@ static const char* const H_SDFMT[] = {
 };
 static const char* const H_ABOUT[] = {
     "STELLA THE WARDOG. BUILT FOR W33Z.",
-    "FOX POMERANIAN ENERGY. RF BRAIN.",
-    "WOOF PROTOCOL ACTIVE."
+    "M5CARDPUTER SECURITY FIELD PLATFORM.",
+    "FIRMWARE, BUILD AND PROJECT INFO."
 };
 static const char* const H_CHARGING[] = {
-    "NAP MODE. BATTERY GETS THE BED.",
-    "PLUG IN. CURL UP. RECHARGE.",
-    "EVEN WARDOGS NEED A NAP."
+    "CHARGING AND LOW-POWER MODE.",
+    "MONITOR BATTERY AND CHARGE STATE.",
+    "REDUCE ACTIVITY WHILE CHARGING."
 };
 
 const RootItem Menu::ROOT_ITEMS[] = {
-    {"/>",  "ASSESS",  H_ATTACK,  (uint8_t)(sizeof(H_ATTACK)/sizeof(H_ATTACK[0])),  RootType::GROUP,  {.groupId = GroupId::ATTACK}},
-    {"o~",  "SNIFF",   H_RECON,   (uint8_t)(sizeof(H_RECON)/sizeof(H_RECON[0])),    RootType::GROUP,  {.groupId = GroupId::RECON}},
-    {"[$",  "FETCH",   H_LOOT,    (uint8_t)(sizeof(H_LOOT)/sizeof(H_LOOT[0])),      RootType::GROUP,  {.groupId = GroupId::LOOT}},
-    {"^#",  "WARDOG",  H_RANK,    (uint8_t)(sizeof(H_RANK)/sizeof(H_RANK[0])),      RootType::GROUP,  {.groupId = GroupId::RANK}},
-    {"))",  "PACK",    H_COMMS,   (uint8_t)(sizeof(H_COMMS)/sizeof(H_COMMS[0])),    RootType::GROUP,  {.groupId = GroupId::COMMS}},
-    {"::",  "COLLAR",  H_SYSTEM,  (uint8_t)(sizeof(H_SYSTEM)/sizeof(H_SYSTEM[0])),  RootType::GROUP,  {.groupId = GroupId::SYSTEM}}
+    {"/>",  "ATTACK",  H_ATTACK,  (uint8_t)(sizeof(H_ATTACK)/sizeof(H_ATTACK[0])),  RootType::GROUP,  {.groupId = GroupId::ATTACK}},
+    {"o~",  "RECON",   H_RECON,   (uint8_t)(sizeof(H_RECON)/sizeof(H_RECON[0])),    RootType::GROUP,  {.groupId = GroupId::RECON}},
+    {"[$",  "CAPTURES",   H_LOOT,    (uint8_t)(sizeof(H_LOOT)/sizeof(H_LOOT[0])),      RootType::GROUP,  {.groupId = GroupId::LOOT}},
+    {"^#",  "PROGRESS",  H_RANK,    (uint8_t)(sizeof(H_RANK)/sizeof(H_RANK[0])),      RootType::GROUP,  {.groupId = GroupId::RANK}},
+    {"))",  "COMMS",    H_COMMS,   (uint8_t)(sizeof(H_COMMS)/sizeof(H_COMMS[0])),    RootType::GROUP,  {.groupId = GroupId::COMMS}},
+    {"::",  "SYSTEM",  H_SYSTEM,  (uint8_t)(sizeof(H_SYSTEM)/sizeof(H_SYSTEM[0])),  RootType::GROUP,  {.groupId = GroupId::SYSTEM}}
 };
 const uint8_t Menu::ROOT_COUNT = sizeof(ROOT_ITEMS) / sizeof(ROOT_ITEMS[0]);
 
@@ -173,22 +173,22 @@ const uint8_t Menu::GROUP_RECON_SIZE = sizeof(GROUP_RECON) / sizeof(GROUP_RECON[
 
 const MenuItem Menu::GROUP_LOOT[] = {
     {"C#", "CAPTURES", 4,  H_HASHES,  (uint8_t)(sizeof(H_HASHES)/sizeof(H_HASHES[0]))},
-    {"~>", "TRAILS",   13, H_TRACKS,  (uint8_t)(sizeof(H_TRACKS)/sizeof(H_TRACKS[0]))},
-    {"B$", "MARKS",    17, H_BOUNTY,  (uint8_t)(sizeof(H_BOUNTY)/sizeof(H_BOUNTY[0]))}
+    {"~>", "GPS TRACKS",   13, H_TRACKS,  (uint8_t)(sizeof(H_TRACKS)/sizeof(H_TRACKS[0]))},
+    {"B$", "TARGETS",    17, H_BOUNTY,  (uint8_t)(sizeof(H_BOUNTY)/sizeof(H_BOUNTY[0]))}
 };
 const uint8_t Menu::GROUP_LOOT_SIZE = sizeof(GROUP_LOOT) / sizeof(GROUP_LOOT[0]);
 
 const MenuItem Menu::GROUP_COMMS[] = {
     {"@)", StellaLanguage::kPackLink, 16, H_SYNC,    (uint8_t)(sizeof(H_SYNC)/sizeof(H_SYNC[0]))},
     {"))", StellaLanguage::kHowl,     18, H_BACONTX, (uint8_t)(sizeof(H_BACONTX)/sizeof(H_BACONTX[0]))},
-    {"FX", "FETCH IO",                3, H_XFIL,    (uint8_t)(sizeof(H_XFIL)/sizeof(H_XFIL[0]))}
+    {"FX", "FILE TRANSFER",                3, H_XFIL,    (uint8_t)(sizeof(H_XFIL)/sizeof(H_XFIL[0]))}
 };
 const uint8_t Menu::GROUP_COMMS_SIZE = sizeof(GROUP_COMMS) / sizeof(GROUP_COMMS[0]);
 
 const MenuItem Menu::GROUP_RANK[] = {
     {"^#", StellaLanguage::kWardogStats, 11, H_FLEX,   (uint8_t)(sizeof(H_FLEX)/sizeof(H_FLEX[0]))},
-    {"*#", "BADGES",                    9, H_BADGES,  (uint8_t)(sizeof(H_BADGES)/sizeof(H_BADGES[0]))},
-    {"?*", "TRICKS",                   15, H_SNOUTS,  (uint8_t)(sizeof(H_SNOUTS)/sizeof(H_SNOUTS[0]))}
+    {"*#", "ACHIEVEMENTS",                    9, H_BADGES,  (uint8_t)(sizeof(H_BADGES)/sizeof(H_BADGES[0]))},
+    {"?*", "UNLOCKABLES",                   15, H_SNOUTS,  (uint8_t)(sizeof(H_SNOUTS)/sizeof(H_SNOUTS[0]))}
 };
 const uint8_t Menu::GROUP_RANK_SIZE = sizeof(GROUP_RANK) / sizeof(GROUP_RANK[0]);
 
@@ -196,9 +196,9 @@ const MenuItem Menu::GROUP_SYSTEM[] = {
     {"==", "SETTINGS",                     5, H_SETTINGS, (uint8_t)(sizeof(H_SETTINGS)/sizeof(H_SETTINGS[0]))},
     {"[]", StellaLanguage::kFriendlyPack,  12, H_BRBRS,   (uint8_t)(sizeof(H_BRBRS)/sizeof(H_BRBRS[0]))},
     {"!!", "COREDUMP",                     7, H_CRASHES,  (uint8_t)(sizeof(H_CRASHES)/sizeof(H_CRASHES[0]))},
-    {"::", "VITALS",                      19, H_DIAG,     (uint8_t)(sizeof(H_DIAG)/sizeof(H_DIAG[0]))},
+    {"::", "DIAGNOSTICS",                      19, H_DIAG,     (uint8_t)(sizeof(H_DIAG)/sizeof(H_DIAG[0]))},
     {"SD", "FORMAT SD",                   20, H_SDFMT,    (uint8_t)(sizeof(H_SDFMT)/sizeof(H_SDFMT[0]))},
-    {"~~", "NAP/CHARGE",                  21, H_CHARGING, (uint8_t)(sizeof(H_CHARGING)/sizeof(H_CHARGING[0]))},
+    {"~~", "CHARGING",                  21, H_CHARGING, (uint8_t)(sizeof(H_CHARGING)/sizeof(H_CHARGING[0]))},
     {":?", StellaLanguage::kAboutStella,    6, H_ABOUT,    (uint8_t)(sizeof(H_ABOUT)/sizeof(H_ABOUT[0]))}
 };
 const uint8_t Menu::GROUP_SYSTEM_SIZE = sizeof(GROUP_SYSTEM) / sizeof(GROUP_SYSTEM[0]);
@@ -250,12 +250,12 @@ uint8_t Menu::getGroupSize(GroupId group) {
 
 const char* Menu::getGroupName(GroupId group) {
     switch (group) {
-        case GroupId::ATTACK:  return "ASSESS";
-        case GroupId::RECON:   return "SNIFF";
-        case GroupId::LOOT:    return "FETCH";
-        case GroupId::COMMS:   return "PACK";
-        case GroupId::RANK:    return "WARDOG";
-        case GroupId::SYSTEM:  return "COLLAR";
+        case GroupId::ATTACK:  return "ATTACK";
+        case GroupId::RECON:   return "RECON";
+        case GroupId::LOOT:    return "CAPTURES";
+        case GroupId::COMMS:   return "COMMS";
+        case GroupId::RANK:    return "PROGRESS";
+        case GroupId::SYSTEM:  return "SYSTEM";
         default: return "";
     }
 }

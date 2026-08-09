@@ -99,23 +99,23 @@ static const uint16_t XP_VALUES[] = {
 // operator archetypes and reduce repetitiveness. Each name
 // corresponds to a 5‑level tier (see getClassForLevel()).
 static const char* CLASS_NAMES[] = {
-    "SH0AT",        // L1‑5 : freshly booted
+    "SC0UT",        // L1‑5 : freshly booted
     "SN1FF3R",      // L6‑10: packet sniffer
     "PR0B3R",       // L11‑15: probe and scout
     "PWN3R",        // L16‑20: first real exploits
     "H4ND5H4K3R",   // L21‑25: handshake hunter
-    "M1TM B0AR",    // L26‑30: man‑in‑the‑middle operator
-    "R00T BR1STL3", // L31‑35: root‑level bristles
+    "M1TM 0P",    // L26‑30: man‑in‑the‑middle operator
+    "R00T 0P", // L31‑35: root‑level bristles
     "PMF W4RD3N",   // L36‑40: Protected Management Frame savvy
     "MLO L3G3ND",   // L41‑45: multi‑link operator legend
-    "B4C0NM4NC3R"   // L46‑50: endgame myth
+    "W4RD0G"   // L46‑50: endgame myth
 };
 
 // Title override names (unlockable special titles)
 static const char* TITLE_OVERRIDE_NAMES[] = {
     nullptr,          // NONE - use standard level title
-    "SH4D0W_H4M",     // Unlocked by ACH_SHADOW_BROKER
-    "P4C1F1ST_P0RK",  // Unlocked by ACH_WITNESS_PROTECT
+    "SH4D0W_0P",     // Unlocked by ACH_SHADOW_BROKER
+    "P4C1F1ST_0P",  // Unlocked by ACH_WITNESS_PROTECT
     "Z3N_M4ST3R"      // Unlocked by ACH_ZEN_MASTER
 };
 
@@ -125,65 +125,65 @@ static const char* TITLE_OVERRIDE_NAMES[] = {
 // the design doc for the thematic progression (Scout → Hunter → Operator → Legend).
 static const char* RANK_TITLES[] = {
     // Tier 1 (Levels 1–5)
-    "BACON N00B",    // Lv1
-    "0INK Z3R0",     // Lv2
-    "SCRIP7 H4M",    // Lv3
-    "P1N6 P1GL3T",   // Lv4
+    "RF N00B",    // Lv1
+    "S1GN4L Z3R0",     // Lv2
+    "SCRIP7 K1D",    // Lv3
+    "P1NG SC0UT",   // Lv4
     "NMAP NIBBL3",   // Lv5
     // Tier 2 (Levels 6–10)
-    "PR0B3 P0RK",    // Lv6
-    "CH4N CH0P",     // Lv7
-    "B34C0N B0AR",   // Lv8
-    "SS1D SN0UT",     // Lv9
-    "P4CK3T PR0D",    // Lv10
+    "PR0B3 SC0UT",    // Lv6
+    "CH4N H0PP3R",     // Lv7
+    "B34C0N HUNT3R",   // Lv8
+    "SS1D SC0UT",     // Lv9
+    "P4CK3T PR0",    // Lv10
     // Tier 3 (Levels 11–15)
-    "4SS0C SW1N3",    // Lv11
+    "4SS0C 0P",    // Lv11
     "EAP0L E4T3R",    // Lv12
     "PMK1D P1CK3R",   // Lv13
     "R5N R4Z0R",      // Lv14
-    "C4PTUR3 C00K",    // Lv15
+    "C4PTUR3 0P",    // Lv15
     // Tier 4 (Levels 16–20)
     "D34UTH DU3L",    // Lv16
     "0FFCH4N 0PS",    // Lv17
-    "M1TM MUDP1G",    // Lv18
+    "M1TM 0P",    // Lv18
     "1NJ3CT J0K3",    // Lv19
-    "5P00F CH3F",     // Lv20
+    "5P00F 0P",     // Lv20
     // Tier 5 (Levels 21–25)
     "SAE S1ZZL3",     // Lv21
     "PMF SH13LD",     // Lv22
-    "TR4NS1T TR0T",   // Lv23
-    "6GHZ GR1NT",      // Lv24
-    "0WE 0NK",        // Lv25
+    "TR4NS1T 0P",   // Lv23
+    "6GHZ SC0UT",      // Lv24
+    "0WE 0P",        // Lv25
     // Tier 6 (Levels 26–30)
     "C3RT CH0MP",     // Lv26
-    "EAP-TLS TUSK",   // Lv27
+    "EAP-TLS 0P",   // Lv27
     "R4D10 R4NG3R",   // Lv28
     "R04M M4ST3R",    // Lv29
-    "EHT BR15TL3",    // Lv30
+    "EHT 0P",    // Lv30
     // Tier 7 (Levels 31–35)
     "FR4G 4TT4CK",    // Lv31
     "KR4CK CRU5H",    // Lv32
     "DR4G0NBL00D",    // Lv33
-    "C0R3DUMP P1G",    // Lv34
-    "R00TK1T R1ND",    // Lv35
+    "C0R3DUMP 0P",    // Lv34
+    "R00TK1T 0P",    // Lv35
     // Tier 8 (Levels 36–40)
-    "PHR4CK P1G",     // Lv36
-    "2600 B0AR",      // Lv37
-    "BLU3B0X H4M",    // Lv38
-    "C0NS0L3 C0W",    // Lv39
-    "0xDE4D B4C0N",    // Lv40
+    "PHR4CK 0P",     // Lv36
+    "2600 0P",      // Lv37
+    "BLU3B0X 0P",    // Lv38
+    "C0NS0L3 0P",    // Lv39
+    "0xDE4D 0P",    // Lv40
     // Tier 9 (Levels 41–45)
     "SPRAWL PR0XY",   // Lv41
-    "N3UR0 N0S3",     // Lv42
-    "ICEBR34K B0AR",   // Lv43
+    "N3UR0 0P",     // Lv42
+    "ICEBR34K 0P",   // Lv43
     "D3CK D1V3R",     // Lv44
     "C0RP N3TW0RK",    // Lv45
     // Tier 10 (Levels 46–50)
-    "K3RN3L H0G",     // Lv46
-    "SYSC4LL SW1N",    // Lv47
+    "K3RN3L 0P",     // Lv46
+    "SYSC4LL 0P",    // Lv47
     "NULL M4TR1X",     // Lv48
     "R00T 0F R00T",    // Lv49
-    "B4C0NM4NC3R"      // Lv50
+    "W4RD0G"      // Lv50
 };
 static const uint8_t MAX_LEVEL = 50;
 
@@ -247,7 +247,7 @@ static const char* ACHIEVEMENT_NAMES[] = {
     // Original 17 (bits 0-16)
     "FIRST BLOOD",
     "CENTURION",
-    "MARATHON PIG",
+    "MARATHON SCOUT",
     "NIGHT OWL",
     "GHOST HUNTER",
     "APPLE FARMER",
@@ -264,10 +264,10 @@ static const char* ACHIEVEMENT_NAMES[] = {
     "N13TZSCH3",
     "T3N THOU$AND",
     "N3WB SNIFFER",
-    "500 P1GS",
+    "500 N3TS",
     "OPEN S3ASON",
     "WEP L0LZER",
-    "HANDSHAK3 HAM",
+    "HANDSHAK3 PR0",
     "F1FTY SHAKES",
     "PMK1D F1END",
     "TR1PLE THREAT",
@@ -283,7 +283,7 @@ static const char* ACHIEVEMENT_NAMES[] = {
     "SAMSUNG SPR4Y",
     "W1ND0WS PANIC",
     "BLE B0MBER",
-    "OINK4GEDDON",
+    "RF4GEDDON",
     "SESS10N V3T",
     "4 HOUR GR1ND",
     "EARLY B1RD",
@@ -319,16 +319,16 @@ static const uint8_t ACHIEVEMENT_COUNT = sizeof(ACHIEVEMENT_NAMES) / sizeof(ACHI
 
 // Level up phrases
 static const char* LEVELUP_PHRASES[] = {
-    "snout grew stronger",
-    "new truffle unlocked",
+    "field skills improved",
+    "new capability unlocked",
     "skill issue? not anymore",
     "gg ez level up",
     "evolution complete",
     "power level rising",
-    "oink intensifies",
+    "operator level increased",
     "XP printer go brrr",
     "grinding them levels",
-    "swine on the rise"
+    "wardog on the rise"
 };
 static const uint8_t LEVELUP_PHRASE_COUNT = sizeof(LEVELUP_PHRASES) / sizeof(LEVELUP_PHRASES[0]);
 
@@ -513,7 +513,7 @@ void XP::init() {
     if (data.totalXP == 0 && data.lifetimeNetworks == 0 && data.sessions == 0) {
         Serial.println("[XP] NVS appears fresh - checking SD backup...");
         if (restoreFromSD()) {
-            Serial.println("[XP] Pig immortality confirmed - restored from SD!");
+            Serial.println("[XP] Stella progress restored from SD!");
         }
     } else {
         // Existing data in NVS - proactively backup to SD
@@ -791,7 +791,7 @@ void XP::addXP(XPEvent event) {
             // Anti-farm: cap BLE XP per session
             if (sessionBleXP >= BLE_XP_CAP) {
                 if (!bleCapWarned) {
-                    Display::notify(NoticeKind::WARNING, "BLE MAXED. TRY OINK.");
+                    Display::notify(NoticeKind::WARNING, "BLE XP CAP REACHED.");
                     bleCapWarned = true;
                 }
                 amount = 0;

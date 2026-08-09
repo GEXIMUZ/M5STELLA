@@ -221,14 +221,18 @@ void setup() {
 
     NetworkRecon::start();
 
-    // W33Z integration is opt-in through /stella_link.json. With no config,
-    // the original offline firmware behavior remains untouched.
+    // USB enrollment + NVS is the normal W33Z path; optional config files only
+    // override advanced transport settings.
     StellaLink::init(handleStellaCommand);
 
     HeapHealth::resetPeaks(true);
 }
 
 void loop() {
+    // USB is Stella's trust bootstrap. Service it before UI, recon, mood or any
+    // mode-specific work so host requests cannot be starved by the main loop.
+    StellaLink::serviceUsbBootstrap();
+
     M5Cardputer.update();
 
     static uint32_t lastHeapLog = 0;

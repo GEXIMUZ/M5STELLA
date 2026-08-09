@@ -224,6 +224,7 @@ void setup() {
     // USB enrollment + NVS is the normal W33Z path; optional config files only
     // override advanced transport settings.
     StellaLink::init(handleStellaCommand);
+    StellaLink::initUsbTransport();
 
     HeapHealth::resetPeaks(true);
 }

@@ -137,7 +137,8 @@ bool sendDisplayFrame() {
     writeRaw(header);
 
     for (uint16_t y = 0; y < DISPLAY_H; y += kMaxRowsPerChunk) {
-        const uint8_t rows = (uint8_t)min<int>(kMaxRowsPerChunk, DISPLAY_H - y);
+        const uint16_t remaining = DISPLAY_H - y;
+        const uint8_t rows = remaining < kMaxRowsPerChunk ? (uint8_t)remaining : kMaxRowsPerChunk;
         if (!fillPixelChunk(y, rows)) {
             // We have already started the JSON line, so terminate it cleanly.
             writeRaw("\"}\n");

@@ -88,7 +88,7 @@ bool sendDisplayChunk(JsonDocument& request) {
     size_t encodedLen = 0;
     const int rc = mbedtls_base64_encode(
         base64Chunk,
-        sizeof(base64Chunk) - 1,
+        sizeof(base64Chunk),
         &encodedLen,
         pixelChunk,
         rawLen

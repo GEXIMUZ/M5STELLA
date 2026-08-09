@@ -21,173 +21,90 @@ def write(path: str, text: str):
     print(f"Wrote {path}")
 
 
+def cpp_string(value: str) -> str:
+    """Return one safe C++ string literal."""
+    return '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+
+
+def emit_frame(name: str, lines) -> str:
+    body = ",\n".join(f"    {cpp_string(line)}" for line in lines)
+    return f"static const char* {name}[] = {{\n{body}\n}};\n"
+
+
+# Exact artwork supplied in Stella_Animations(4).txt.
+FRAMES = {
+    "AVATAR_NEUTRAL_L": [" ^^   ", "(oo)  ", "(   )>"],
+    "AVATAR_NEUTRAL_R": ["   ^^ ", "  (oo)", "<(   )"],
+    "AVATAR_HAPPY_L": [" ^^   ", "(^^)  ", "(   )>"],
+    "AVATAR_HAPPY_R": ["   ^^ ", "  (^^)", "<(   )"],
+    "AVATAR_EXCITED_L": [" ^^   ", "($$)  ", "(   )>"],
+    "AVATAR_EXCITED_R": ["   ^^ ", "  ($$)", "<(   )"],
+    "AVATAR_HUNTING_L": [" ^^   ", "(==)  ", "(   )>"],
+    "AVATAR_HUNTING_R": ["   ^^ ", "  (==)", "<(   )"],
+    "AVATAR_SLEEPY_L": [" ^^   ", "(--)  ", "(   )>"],
+    "AVATAR_SLEEPY_R": ["   ^^ ", "  (--)", "<(   )"],
+    "AVATAR_SAD_L": [" ^^   ", "(**)  ", "(   )>"],
+    "AVATAR_SAD_R": ["   ^^ ", "  (**)", "<(   )"],
+    "AVATAR_ANGRY_L": [" ^^   ", "(@@)  ", "(   )>"],
+    "AVATAR_ANGRY_R": ["   ^^ ", "  (@@)", "<(   )"],
+    "STELLA_BLINK_L": [" ^^   ", "(><)  ", "(   )>"],
+    "STELLA_BLINK_R": ["   ^^ ", "  (><)", "<(   )"],
+    "STELLA_SNIFF_1_L": [" ^ ^  ", "(o.o) ", "(   )>"],
+    "STELLA_SNIFF_1_R": ["  ^ ^ ", " (o.o)", "<(   )"],
+    "STELLA_SNIFF_2_L": [" ^ ^  ", "(>.<) ", "(   )>"],
+    "STELLA_SNIFF_2_R": ["  ^ ^ ", " (>.<)", "<(   )"],
+    "STELLA_TAIL_WAG_1_L": [" ^^   ", "(oo) /", "(   )\\"],
+    "STELLA_TAIL_WAG_1_R": ["   ^^ ", "\\ (oo)", "/(   )"],
+    "STELLA_TAIL_WAG_2_L": [" ^^   ", "(oo) \\", "(   )/"],
+    "STELLA_TAIL_WAG_2_R": ["   ^^ ", "/ (oo)", "\\(   )"],
+}
+
+
 # ---------------------------------------------------------------------------
-# 1) TAKE CURRENT UPSTREAM PORKCHOP ENVIRONMENT VERBATIM
+# 1) CURRENT UPSTREAM PORKCHOP ENVIRONMENT, VERBATIM
 # ---------------------------------------------------------------------------
 weather = fetch("src/piglet/weather.cpp")
 write("src/piglet/weather.cpp", weather)
 
 # ---------------------------------------------------------------------------
-# 2) TAKE CURRENT UPSTREAM PORKCHOP AVATAR ENGINE VERBATIM
-#    THEN REPLACE ONLY THE MASCOT ART/RENDERING WITH STELLA.
+# 2) CURRENT UPSTREAM PORKCHOP AVATAR ENGINE, VERBATIM BASE
 # ---------------------------------------------------------------------------
 avatar = fetch("src/piglet/avatar.cpp")
 
-stella_frames = r'''// --- STELLA THE WARDOG: exact user-supplied 3-line frames ---
-// Environment, motion, bounce, grass, stars, weather hooks and timing below
-// remain from current upstream M5PORKCHOP.
-const char* AVATAR_NEUTRAL_L[] = {
-    " ^^   ",
-    "(oo)  ",
-    "(   )>"
-};
-const char* AVATAR_NEUTRAL_R[] = {
-    "   ^^ ",
-    "  (oo)",
-    "<(   )"
-};
+frame_order = [
+    "AVATAR_NEUTRAL_R", "AVATAR_HAPPY_R", "AVATAR_EXCITED_R",
+    "AVATAR_HUNTING_R", "AVATAR_SLEEPY_R", "AVATAR_SAD_R", "AVATAR_ANGRY_R",
+    "AVATAR_NEUTRAL_L", "AVATAR_HAPPY_L", "AVATAR_EXCITED_L",
+    "AVATAR_HUNTING_L", "AVATAR_SLEEPY_L", "AVATAR_SAD_L", "AVATAR_ANGRY_L",
+    "STELLA_BLINK_R", "STELLA_BLINK_L",
+    "STELLA_SNIFF_1_R", "STELLA_SNIFF_1_L",
+    "STELLA_SNIFF_2_R", "STELLA_SNIFF_2_L",
+    "STELLA_TAIL_WAG_1_R", "STELLA_TAIL_WAG_1_L",
+    "STELLA_TAIL_WAG_2_R", "STELLA_TAIL_WAG_2_L",
+]
 
-const char* AVATAR_HAPPY_L[] = {
-    " ^^   ",
-    "(^^)  ",
-    "(   )>"
-};
-const char* AVATAR_HAPPY_R[] = {
-    "   ^^ ",
-    "  (^^)",
-    "<(   )"
-};
+stella_frames = (
+    "// --- STELLA THE WARDOG: exact user-supplied 3-line artwork ---\n"
+    "// Only mascot artwork changes. Porkchop owns environment, motion and timing.\n"
+    + "\n".join(emit_frame(name, FRAMES[name]) for name in frame_order)
+)
 
-const char* AVATAR_EXCITED_L[] = {
-    " ^^   ",
-    "($$)  ",
-    "(   )>"
-};
-const char* AVATAR_EXCITED_R[] = {
-    "   ^^ ",
-    "  ($$)",
-    "<(   )"
-};
-
-const char* AVATAR_HUNTING_L[] = {
-    " ^^   ",
-    "(==)  ",
-    "(   )>"
-};
-const char* AVATAR_HUNTING_R[] = {
-    "   ^^ ",
-    "  (==)",
-    "<(   )"
-};
-
-const char* AVATAR_SLEEPY_L[] = {
-    " ^^   ",
-    "(--)  ",
-    "(   )>"
-};
-const char* AVATAR_SLEEPY_R[] = {
-    "   ^^ ",
-    "  (--)",
-    "<(   )"
-};
-
-const char* AVATAR_SAD_L[] = {
-    " ^^   ",
-    "(**)  ",
-    "(   )>"
-};
-const char* AVATAR_SAD_R[] = {
-    "   ^^ ",
-    "  (**)",
-    "<(   )"
-};
-
-const char* AVATAR_ANGRY_L[] = {
-    " ^^   ",
-    "(@@)  ",
-    "(   )>"
-};
-const char* AVATAR_ANGRY_R[] = {
-    "   ^^ ",
-    "  (@@)",
-    "<(   )"
-};
-
-static const char* STELLA_BLINK_L[] = {
-    " ^^   ",
-    "(><)  ",
-    "(   )>"
-};
-static const char* STELLA_BLINK_R[] = {
-    "   ^^ ",
-    "  (><)",
-    "<(   )"
-};
-
-static const char* STELLA_SNIFF_1_L[] = {
-    " ^ ^  ",
-    "(o.o) ",
-    "(   )>"
-};
-static const char* STELLA_SNIFF_1_R[] = {
-    "  ^ ^ ",
-    " (o.o)",
-    "<(   )"
-};
-static const char* STELLA_SNIFF_2_L[] = {
-    " ^ ^  ",
-    "(>.<) ",
-    "(   )>"
-};
-static const char* STELLA_SNIFF_2_R[] = {
-    "  ^ ^ ",
-    " (>.<)",
-    "<(   )"
-};
-
-static const char* STELLA_TAIL_WAG_1_L[] = {
-    " ^^   ",
-    "(oo) /",
-    "(   )\\"
-};
-static const char* STELLA_TAIL_WAG_1_R[] = {
-    "   ^^ ",
-    "\\ (oo)",
-    "/(   )"
-};
-static const char* STELLA_TAIL_WAG_2_L[] = {
-    " ^^   ",
-    "(oo) \\",
-    "(   )/"
-};
-static const char* STELLA_TAIL_WAG_2_R[] = {
-    "   ^^ ",
-    "/ (oo)",
-    "\\(   )"
-};
-'''
-
-# Replace only the donor ASCII frame declarations.
-pattern = re.compile(
+sprite_block = re.compile(
     r"// --- DERPY STYLE with direction ---.*?(?=void Avatar::init\(\))",
     re.S,
 )
-if not pattern.search(avatar):
-    raise SystemExit("ERROR: donor sprite block not found; upstream layout changed")
-avatar = pattern.sub(stella_frames + "\n", avatar, count=1)
+if not sprite_block.search(avatar):
+    raise SystemExit("ERROR: donor sprite block not found; upstream avatar layout changed")
+avatar = sprite_block.sub(lambda _: stella_frames + "\n", avatar, count=1)
 
-# Keep Porkchop's sniff event duration/triggering, but render the two exact Stella
-# sniff images instead of mutating pig nose characters. The cadence remains donor
-# 100 ms; no environment/motion timing is changed.
-
-# Replace donor frame-selection tail with Stella-aware selection while preserving
-# all preceding upstream behavior and state updates.
+# Replace only Porkchop's artwork selection. Donor code still controls WHEN blink,
+# sniff, movement, mood changes, bounce, jump and all random behavior happen.
 select_pattern = re.compile(
     r"    // Select frame based on state and direction \(blink modifies eye only, not ears\).*?"
     r"    drawFrame\(canvas, frame, 3, shouldBlink, facingRight, isSniffing\);",
     re.S,
 )
-select_replacement = r'''    // Select Stella artwork only. All movement/state logic above is donor Porkchop.
+select_replacement = '''    // Select Stella artwork; state/timing above remains exact donor Porkchop.
     const char** frame;
     bool shouldBlink = isBlinking && currentState != AvatarState::SLEEPY;
 
@@ -196,25 +113,13 @@ select_replacement = r'''    // Select Stella artwork only. All movement/state l
     }
 
     if (isSniffing) {
-        // Exact supplied sniff frames; donor still owns when/why sniffing happens.
-        bool second = ((sniffFrame & 1U) != 0U);
-        if (facingRight) {
-            frame = second ? STELLA_SNIFF_2_R : STELLA_SNIFF_1_R;
-        } else {
-            frame = second ? STELLA_SNIFF_2_L : STELLA_SNIFF_1_L;
-        }
-        shouldBlink = false;
+        // Donor sniffFrame cadence is untouched. Map its phases to the two supplied Stella frames.
+        const bool second = ((sniffFrame & 1U) != 0U);
+        frame = facingRight
+            ? (second ? STELLA_SNIFF_2_R : STELLA_SNIFF_1_R)
+            : (second ? STELLA_SNIFF_2_L : STELLA_SNIFF_1_L);
     } else if (shouldBlink) {
         frame = facingRight ? STELLA_BLINK_R : STELLA_BLINK_L;
-    } else if ((currentState == AvatarState::HAPPY || currentState == AvatarState::EXCITED) &&
-               !transitioning && !grassMoving) {
-        // Use only the exact supplied wag frames. This changes mascot art only.
-        bool wag2 = ((millis() / 220U) & 1U) != 0U;
-        if (facingRight) {
-            frame = wag2 ? STELLA_TAIL_WAG_2_R : STELLA_TAIL_WAG_1_R;
-        } else {
-            frame = wag2 ? STELLA_TAIL_WAG_2_L : STELLA_TAIL_WAG_1_L;
-        }
     } else {
         switch (currentState) {
             case AvatarState::HAPPY:
@@ -236,36 +141,33 @@ select_replacement = r'''    // Select Stella artwork only. All movement/state l
 
     drawFrame(canvas, frame, 3, false, facingRight, false);'''
 if not select_pattern.search(avatar):
-    raise SystemExit("ERROR: donor frame-selection block not found; upstream layout changed")
-avatar = select_pattern.sub(select_replacement, avatar, count=1)
+    raise SystemExit("ERROR: donor frame-selection block not found; upstream avatar layout changed")
+avatar = select_pattern.sub(lambda _: select_replacement, avatar, count=1)
 
-# Replace ONLY the pig-specific per-line drawing code inside drawFrame. We leave
-# donor star update, bounding-box clearing, thunder colors, jump, attack shake,
-# walk bounce, X/Y placement and every environment function untouched.
+# Replace only the pig-specific line mutation in drawFrame. Everything before this
+# loop (stars, clear box, thunder color, jump, shake, donor walk bounce, X/Y) remains.
 loop_pattern = re.compile(
     r"    for \(uint8_t i = 0; i < lines; i\+\+\) \{.*?\n    \}\n(?=\})",
     re.S,
 )
-loop_replacement = r'''    // Stella frames already contain the complete head/body/tail.
-    // Do not apply Porkchop's pig-snout or z-tail mutations.
+loop_replacement = '''    // Stella frames already contain complete head/body/tail artwork.
     for (uint8_t i = 0; i < lines; i++) {
         canvas.drawString(frame[i], startX, startY + i * lineHeight);
     }
 '''
-# Target the loop occurring after drawFrame, not arbitrary earlier loops.
 draw_pos = avatar.find("void Avatar::drawFrame(")
 if draw_pos < 0:
     raise SystemExit("ERROR: donor drawFrame not found")
 prefix, draw_tail = avatar[:draw_pos], avatar[draw_pos:]
 if not loop_pattern.search(draw_tail):
-    raise SystemExit("ERROR: donor pig draw loop not found; upstream layout changed")
-draw_tail = loop_pattern.sub(loop_replacement, draw_tail, count=1)
+    raise SystemExit("ERROR: donor pig draw loop not found; upstream avatar layout changed")
+draw_tail = loop_pattern.sub(lambda _: loop_replacement, draw_tail, count=1)
 avatar = prefix + draw_tail
 
 write("src/piglet/avatar.cpp", avatar)
 
 # ---------------------------------------------------------------------------
-# 3) UI-ONLY LEGACY SYNC LABEL. INTERNAL PIGSYNC PROTOCOL NAMES STAY UNCHANGED.
+# 3) UI-ONLY LABEL. INTERNAL PIGSYNC PROTOCOL IS LEFT UNTOUCHED.
 # ---------------------------------------------------------------------------
 sync_path = ROOT / "src/modes/pigsync_client.cpp"
 if sync_path.exists():
@@ -273,11 +175,11 @@ if sync_path.exists():
     s2 = s.replace('"PIGSYNC OFFLINE"', '"W33Z SYNC OFFLINE"')
     if s2 != s:
         sync_path.write_text(s2, encoding="utf-8")
-        print("Updated visible PIGSYNC OFFLINE label -> W33Z SYNC OFFLINE")
+        print("Updated visible PIGSYNC OFFLINE -> W33Z SYNC OFFLINE")
 
 print("\nDONE")
-print("- src/piglet/weather.cpp = exact current upstream Porkchop")
-print("- src/piglet/avatar.cpp = exact current upstream Porkchop engine + Stella art only")
-print("- Stella frames = exact supplied Stella_Animations(4).txt artwork")
-print("- no custom grass/cloud/weather/movement/timing transplant")
-print("\nNext: pio run -e m5cardputer")
+print("- weather.cpp: exact current upstream M5PORKCHOP")
+print("- avatar.cpp: exact current upstream engine; only pig artwork renderer replaced")
+print("- Stella artwork: exact Stella_Animations(4).txt")
+print("- no custom grass, clouds, weather, movement, bounce or timing")
+print("\nNext: pio run -e m5cardputer -t clean && pio run -e m5cardputer")

@@ -60,6 +60,10 @@ public:
     static bool closeModal();  // Returns true if modal was closed
     static void show();
     static void hide();
+
+    // Trusted local USB remote navigation. Uses the exact same selection state
+    // and callbacks as the physical Cardputer keyboard.
+    static bool handleRemoteAction(const char* action);
     
     static const char* getSelectedDescription();  // For bottom bar
     

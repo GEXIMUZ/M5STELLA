@@ -41,6 +41,11 @@ const String& baseUrl();
 const String& deviceId();
 const String& lastError();
 
+// On-device COMMS -> W33Z SYNC status view. Pairing itself remains USB-first;
+// this function only reports enrollment/link state and lets the menu request a
+// reconnect with nudge().
+void showSyncStatus();
+
 // Firmware can expose its current technical state without coupling W33Z to the
 // internal UI/mode naming. Valid states: idle, scanning, syncing, paused,
 // warning, error, sleeping.

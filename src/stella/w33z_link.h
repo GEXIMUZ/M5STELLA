@@ -20,16 +20,23 @@ enum class CommandAction : uint8_t {
 
 using CommandHandler = bool (*)(CommandAction action, const String& payload, String& result);
 
-// Reads optional /stella_link.json from SD and prepares the W33Z client.
-// The link is opt-in and disabled when no config file exists.
+// Initializes Stella's W33Z identity, stored enrollment state and optional
+// advanced /stella_link.json overrides. Normal enrollment does not require an
+// SD-card config file: USB bootstrap + NVS is the default path.
 void init(CommandHandler handler = nullptr);
 
-// Non-blocking periodic service. Handles heartbeat/telemetry and command polling.
+// Service the native USB CDC bootstrap protocol. This is intentionally public
+// so main.cpp can run it before heavier UI/recon work on every loop iteration.
+void serviceUsbBootstrap();
+
+// Non-blocking Wi-Fi service. Before USB enrollment it performs no Wi-Fi/TLS
+// work; after enrollment it handles handshake, telemetry and command polling.
 void update();
 
 bool isEnabled();
 bool isConnected();
 bool isRegistered();
+bool isPaired();
 const String& baseUrl();
 const String& deviceId();
 const String& lastError();
@@ -39,7 +46,7 @@ const String& lastError();
 // warning, error, sleeping.
 void setTechnicalState(const char* state);
 
-// Request an immediate handshake/telemetry cycle on next update().
+// Request an immediate authenticated handshake/telemetry cycle on next update.
 void nudge();
 
 } // namespace StellaLink

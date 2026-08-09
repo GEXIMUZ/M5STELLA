@@ -3,9 +3,11 @@
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
 #include <M5Cardputer.h>
+#include <Preferences.h>
 #include <SD.h>
 #include <SPIFFS.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 
 #include "identity.h"
 #include "../core/config.h"
@@ -18,7 +20,9 @@ namespace {
 struct LinkConfig {
     bool enabled = false;
     bool wifiAutoConnect = false;
+    bool tlsInsecure = true;
     String baseUrl;
+    String pairingCode;
     uint32_t heartbeatMs = 5000;
     uint32_t commandPollMs = 1500;
     uint32_t reconnectMs = 10000;
@@ -29,11 +33,13 @@ CommandHandler commandHandler = nullptr;
 String id;
 String errorText;
 String state = "idle";
+String bearerToken;
 bool registered = false;
 uint32_t lastHeartbeat = 0;
 uint32_t lastCommandPoll = 0;
 uint32_t lastReconnectAttempt = 0;
 bool forceCycle = false;
+Preferences prefs;
 
 String trimSlash(String value) {
     value.trim();
@@ -63,6 +69,20 @@ bool readConfigDocument(JsonDocument& doc) {
     return true;
 }
 
+void loadStoredToken() {
+    if (!prefs.begin("stella-link", false)) return;
+    bearerToken = prefs.getString("token", "");
+    prefs.end();
+}
+
+void saveStoredToken(const String& token) {
+    if (token.isEmpty()) return;
+    if (!prefs.begin("stella-link", false)) return;
+    prefs.putString("token", token);
+    prefs.end();
+    bearerToken = token;
+}
+
 void loadConfig() {
     JsonDocument doc;
     if (!readConfigDocument(doc)) {
@@ -73,7 +93,10 @@ void loadConfig() {
 
     cfg.enabled = doc["enabled"] | false;
     cfg.wifiAutoConnect = doc["wifiAutoConnect"] | false;
+    cfg.tlsInsecure = doc["tlsInsecure"] | true;
     cfg.baseUrl = trimSlash(String((const char*)(doc["baseUrl"] | "")));
+    cfg.pairingCode = String((const char*)(doc["pairingCode"] | ""));
+    cfg.pairingCode.trim();
     cfg.heartbeatMs = constrain((uint32_t)(doc["heartbeatMs"] | 5000), 2000UL, 60000UL);
     cfg.commandPollMs = constrain((uint32_t)(doc["commandPollMs"] | 1500), 500UL, 30000UL);
     cfg.reconnectMs = constrain((uint32_t)(doc["reconnectMs"] | 10000), 3000UL, 120000UL);
@@ -81,11 +104,9 @@ void loadConfig() {
     if (cfg.enabled && cfg.baseUrl.isEmpty()) {
         cfg.enabled = false;
         errorText = "W33Z link enabled but baseUrl is empty.";
-    } else if (cfg.enabled && !cfg.baseUrl.startsWith("http://")) {
-        // Local W33Z deployments currently use plain HTTP on the LAN. Keeping
-        // TLS out of this first transport also avoids large ESP32 heap spikes.
+    } else if (cfg.enabled && !cfg.baseUrl.startsWith("http://") && !cfg.baseUrl.startsWith("https://")) {
         cfg.enabled = false;
-        errorText = "Stella protocol v1 Wi-Fi transport currently requires http:// baseUrl.";
+        errorText = "W33Z baseUrl must start with http:// or https://";
     }
 }
 
@@ -131,19 +152,41 @@ void addTelemetry(JsonObject telemetry) {
     }
 }
 
+void addCommonHeaders(HTTPClient& http) {
+    http.addHeader("User-Agent", "M5STELLA/" + String(StellaIdentity::firmwareVersion()));
+    if (!bearerToken.isEmpty()) {
+        http.addHeader("Authorization", "Bearer " + bearerToken);
+    }
+}
+
+bool beginHttp(HTTPClient& http, WiFiClientSecure& secure, const String& url) {
+    if (url.startsWith("https://")) {
+        // Phase 1: encrypted transport to W33Z. Certificate pinning/CA bundle can
+        // replace setInsecure after the public deployment path is stable.
+        if (!cfg.tlsInsecure) {
+            errorText = "HTTPS currently requires tlsInsecure=true until CA pinning is configured.";
+            return false;
+        }
+        secure.setInsecure();
+        return http.begin(secure, url);
+    }
+    return http.begin(url);
+}
+
 bool postJson(const String& path, const String& payload, String* response = nullptr) {
     if (WiFi.status() != WL_CONNECTED) return false;
 
     HTTPClient http;
-    http.setConnectTimeout(2500);
-    http.setTimeout(4000);
+    WiFiClientSecure secure;
+    http.setConnectTimeout(3500);
+    http.setTimeout(6000);
     const String url = cfg.baseUrl + path;
-    if (!http.begin(url)) {
-        errorText = "HTTP begin failed: " + url;
+    if (!beginHttp(http, secure, url)) {
+        if (errorText.isEmpty()) errorText = "HTTP begin failed: " + url;
         return false;
     }
     http.addHeader("Content-Type", "application/json");
-    http.addHeader("User-Agent", "M5STELLA/" + String(StellaIdentity::firmwareVersion()));
+    addCommonHeaders(http);
 
     const int statusCode = http.POST(payload);
     if (response) *response = statusCode > 0 ? http.getString() : String();
@@ -161,14 +204,15 @@ bool getJson(const String& path, String& response) {
     if (WiFi.status() != WL_CONNECTED) return false;
 
     HTTPClient http;
-    http.setConnectTimeout(2500);
-    http.setTimeout(4000);
+    WiFiClientSecure secure;
+    http.setConnectTimeout(3500);
+    http.setTimeout(6000);
     const String url = cfg.baseUrl + path;
-    if (!http.begin(url)) {
-        errorText = "HTTP begin failed: " + url;
+    if (!beginHttp(http, secure, url)) {
+        if (errorText.isEmpty()) errorText = "HTTP begin failed: " + url;
         return false;
     }
-    http.addHeader("User-Agent", "M5STELLA/" + String(StellaIdentity::firmwareVersion()));
+    addCommonHeaders(http);
 
     const int statusCode = http.GET();
     response = statusCode > 0 ? http.getString() : String();
@@ -185,6 +229,8 @@ bool getJson(const String& path, String& response) {
 bool sendHandshake() {
     JsonDocument doc;
     doc["transport"] = "wifi";
+    if (bearerToken.isEmpty() && !cfg.pairingCode.isEmpty()) doc["pairingCode"] = cfg.pairingCode;
+
     JsonObject handshake = doc["handshake"].to<JsonObject>();
     handshake["protocolVersion"] = StellaIdentity::kProtocolVersion;
 
@@ -196,19 +242,34 @@ bool sendHandshake() {
     identity["firmwareVersion"] = StellaIdentity::firmwareVersion();
     identity["protocolVersion"] = StellaIdentity::kProtocolVersion;
     JsonArray capabilities = identity["capabilities"].to<JsonArray>();
-    for (size_t i = 0; i < StellaIdentity::kCapabilityCount; ++i) {
-        capabilities.add(StellaIdentity::kCapabilities[i]);
-    }
+    for (size_t i = 0; i < StellaIdentity::kCapabilityCount; ++i) capabilities.add(StellaIdentity::kCapabilities[i]);
 
     JsonObject telemetry = handshake["telemetry"].to<JsonObject>();
     addTelemetry(telemetry);
 
     String payload;
     serializeJson(doc, payload);
-    if (!postJson("/api/stella/handshake", payload)) return false;
+    String response;
+    if (!postJson("/api/stella/handshake", payload, &response)) return false;
+
+    JsonDocument reply;
+    if (deserializeJson(reply, response)) {
+        errorText = "Invalid W33Z handshake response.";
+        return false;
+    }
+    if (!(reply["success"] | false)) {
+        errorText = String((const char*)(reply["error"] | "W33Z rejected handshake"));
+        return false;
+    }
+
+    const char* issuedToken = reply["token"] | nullptr;
+    if (issuedToken && *issuedToken) {
+        saveStoredToken(String(issuedToken));
+        Serial.println("[STELLA] W33Z pairing token stored in NVS.");
+    }
 
     registered = true;
-    Serial.printf("[STELLA] On leash: %s (%s)\n", id.c_str(), cfg.baseUrl.c_str());
+    Serial.printf("[STELLA] W33Z linked: %s (%s)\n", id.c_str(), cfg.baseUrl.c_str());
     return true;
 }
 
@@ -296,6 +357,7 @@ void pollCommands() {
 void init(CommandHandler handler) {
     commandHandler = handler;
     id = StellaIdentity::deviceId();
+    loadStoredToken();
     loadConfig();
 
     Serial.printf("[STELLA] Identity: %s / fw %s / protocol v%u\n",
@@ -304,7 +366,8 @@ void init(CommandHandler handler) {
         Serial.printf("[STELLA] W33Z link disabled: %s\n", errorText.c_str());
         return;
     }
-    Serial.printf("[STELLA] W33Z link enabled -> %s\n", cfg.baseUrl.c_str());
+    Serial.printf("[STELLA] W33Z link enabled -> %s | paired=%s\n",
+                  cfg.baseUrl.c_str(), bearerToken.isEmpty() ? "no" : "yes");
     forceCycle = true;
 }
 

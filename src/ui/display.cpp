@@ -47,9 +47,9 @@
 // Theme definitions
 const PorkTheme THEMES[THEME_COUNT] = {
     // Dark modes - colored text on black (RGB332-compatible)
-    {"P1NK",      0xF92A, 0x0000},  // Default piglet pink - RGB332-quantized
+    {"P0M",       0xF92A, 0x0000},  // Default piglet pink - RGB332-quantized
     {"CYB3R",     0x07E0, 0x0000},  // Cyan/tron - RGB332-quantized
-    {"PCMDR64",   0xDED5, 0x4A4A},  // Porkchop Commandor 64 - RGB332-quantized
+    {"W4RD0G64",  0xDED5, 0x4A4A},  // Porkchop Commandor 64 - RGB332-quantized
     {"MSD0SEXE", 0xFFE0, 0x001F},  // Classic MS-DOS yellow on blue - RGB332-quantized
     {"AMB3R",     0xFDA0, 0x0000},  // Amber terminal - RGB332-quantized
     {"BL00D",     0xF800, 0x0000},  // Red - RGB332-quantized
@@ -555,26 +555,26 @@ void Display::drawTopBar() {
     
     switch (mode) {
         case PorkchopMode::IDLE:
-            snprintf(modeBuf, sizeof(modeBuf), "IDLE");
+            snprintf(modeBuf, sizeof(modeBuf), "STELLA");
             break;
         case PorkchopMode::OINK_MODE:
-            snprintf(modeBuf, sizeof(modeBuf), "OINKS");
+            snprintf(modeBuf, sizeof(modeBuf), "BITE");
             modeColor = COLOR_ACCENT;
             break;
         case PorkchopMode::DNH_MODE:
-            snprintf(modeBuf, sizeof(modeBuf), "DONOHAM");
+            snprintf(modeBuf, sizeof(modeBuf), "SNIFF");
             modeColor = COLOR_ACCENT;
             break;
         case PorkchopMode::WARHOG_MODE:
-            snprintf(modeBuf, sizeof(modeBuf), "SGT WARHOG");
+            snprintf(modeBuf, sizeof(modeBuf), "PATROL");
             modeColor = COLOR_DANGER;
             break;
         case PorkchopMode::PIGGYBLUES_MODE:
-            snprintf(modeBuf, sizeof(modeBuf), "BLUES");
+            snprintf(modeBuf, sizeof(modeBuf), "BLUE PAWS");
             modeColor = COLOR_ACCENT;
             break;
         case PorkchopMode::SPECTRUM_MODE:
-            snprintf(modeBuf, sizeof(modeBuf), "HOG ON SPECTRUM");
+            snprintf(modeBuf, sizeof(modeBuf), "AIRWATCH");
             modeColor = COLOR_ACCENT;
             break;
         case PorkchopMode::MENU:
@@ -584,7 +584,7 @@ void Display::drawTopBar() {
             snprintf(modeBuf, sizeof(modeBuf), "CONFIG");
             break;
         case PorkchopMode::ABOUT:
-            snprintf(modeBuf, sizeof(modeBuf), "ABOUTPIG");
+            snprintf(modeBuf, sizeof(modeBuf), "ABOUT STELLA");
             break;
         case PorkchopMode::FILE_TRANSFER:
             snprintf(modeBuf, sizeof(modeBuf), "XFER");
@@ -597,24 +597,24 @@ void Display::drawTopBar() {
             snprintf(modeBuf, sizeof(modeBuf), "DIAGDATA");
             break;
         case PorkchopMode::CAPTURES:
-            snprintf(modeBuf, sizeof(modeBuf), "L00T (%u)", (unsigned)CapturesMenu::getCount());
+            snprintf(modeBuf, sizeof(modeBuf), "FETCH (%u)", (unsigned)CapturesMenu::getCount());
             modeColor = COLOR_ACCENT;
             break;
         case PorkchopMode::ACHIEVEMENTS:
-            snprintf(modeBuf, sizeof(modeBuf), "PR00F (%u/%u)", 
+            snprintf(modeBuf, sizeof(modeBuf), "BADGES (%u/%u)", 
                      (unsigned)XP::getUnlockedCount(), (unsigned)AchievementsMenu::TOTAL_ACHIEVEMENTS);
             modeColor = COLOR_ACCENT;
             break;
         case PorkchopMode::SWINE_STATS:
-            snprintf(modeBuf, sizeof(modeBuf), "SW1N3 ST4TS");
+            snprintf(modeBuf, sizeof(modeBuf), "WARDOG STATS");
             modeColor = COLOR_ACCENT;
             break;
         case PorkchopMode::BOAR_BROS:
-            snprintf(modeBuf, sizeof(modeBuf), "B04R BR0S (%u)", (unsigned)BoarBrosMenu::getCount());
+            snprintf(modeBuf, sizeof(modeBuf), "FRIENDLY PACK (%u)", (unsigned)BoarBrosMenu::getCount());
             modeColor = COLOR_ACCENT;
             break;
         case PorkchopMode::WIGLE_MENU:
-            snprintf(modeBuf, sizeof(modeBuf), "PORK TR4CKS (%u)", (unsigned)WigleMenu::getCount());
+            snprintf(modeBuf, sizeof(modeBuf), "PAW TRACKS (%u)", (unsigned)WigleMenu::getCount());
             modeColor = COLOR_ACCENT;
             break;
         case PorkchopMode::UNLOCKABLES:
@@ -626,7 +626,7 @@ void Display::drawTopBar() {
             modeColor = COLOR_ACCENT;
             break;
         case PorkchopMode::BACON_MODE:
-            snprintf(modeBuf, sizeof(modeBuf), "BACON");
+            snprintf(modeBuf, sizeof(modeBuf), "HOWL");
             modeColor = COLOR_ACCENT;
             break;
         case PorkchopMode::SD_FORMAT:
@@ -642,11 +642,11 @@ void Display::drawTopBar() {
     // Append mood indicator
     int happiness = Mood::getLastEffectiveHappiness();
     const char* moodLabel;
-    if (happiness > 70) moodLabel = "HYP3";
-    else if (happiness > 30) moodLabel = "GUD";
-    else if (happiness > -10) moodLabel = "0K";
-    else if (happiness > -50) moodLabel = "M3H";
-    else moodLabel = "S4D";
+    if (happiness > 70) moodLabel = "ZOOMIES";
+    else if (happiness > 30) moodLabel = "HAPPY";
+    else if (happiness > -10) moodLabel = "ALERT";
+    else if (happiness > -50) moodLabel = "GRUMPY";
+    else moodLabel = "LOW TAIL";
     
     // Build final mode string with fixed buffer to prevent heap fragmentation
     char finalModeBuf[80];  // Ample size for mode + mood + PWNED + SSID

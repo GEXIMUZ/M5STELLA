@@ -28,7 +28,7 @@ static const char* MOOD_NVS_NAMESPACE = "porkmood";
 #define SET_PHRASE(dst, src) do { strncpy((dst), (src), sizeof(dst) - 1); (dst)[sizeof(dst) - 1] = '\0'; } while(0)
 
 // Static members
-char Mood::currentPhrase[40] = "oink";
+char Mood::currentPhrase[40] = "woof";
 int Mood::happiness = 50;
 uint32_t Mood::lastPhraseChange = 0;
 uint32_t Mood::phraseInterval = 5000;
@@ -121,20 +121,20 @@ static const char* const PHRASES_HEAP_WARNING[] = {
     "TLSF sweating proper",
     "bones creaking bruv",
     "35KB contiguous? good luck",
-    "pig smells fragmentation"
+    "Stella smells fragmentation"
 };
 static const int PHRASES_HEAP_WARNING_COUNT = 5;
 
 static const char* const PHRASES_HEAP_CRITICAL[] = {
     "MALLOC SAYS GOODBYE",
-    "PIG CANT MALLOC. PIG SCARED.",
+    "STELLA CANT MALLOC. SEND TREATS.",
     "0 BYTES LEFT. SEND HELP.",
     "HEAP FLATLINED BRUV"
 };
 static const int PHRASES_HEAP_CRITICAL_COUNT = 4;
 
 static const char* const PHRASES_HEAP_RECOVERY[] = {
-    "TLSF coalesced. pig lives.",
+    "TLSF coalesced. Stella lives.",
     "free blocks returned. praise.",
     "defrag worked. praise."
 };
@@ -143,8 +143,8 @@ static const int PHRASES_HEAP_RECOVERY_COUNT = 3;
 // Idea 2: Time-of-day phrases (personality-split)
 static const char* const PHRASES_TIME_EARLY_OINK[] = {
     "proper early bruv",
-    "5am. pig respects madness.",
-    "breakfast hack innit"
+    "5am. wardog respects madness.",
+    "breakfast patrol innit"
 };
 static const char* const PHRASES_TIME_EARLY_WARHOG[] = {
     "zero dark thirty sir",
@@ -152,8 +152,8 @@ static const char* const PHRASES_TIME_EARLY_WARHOG[] = {
     "first light ops"
 };
 static const char* const PHRASES_TIME_LATENIGHT_OINK[] = {
-    "its 2am. pig questions choices",
-    "nocturnal hog mode",
+    "its 2am. Stella questions choices",
+    "nocturnal wardog mode",
     "sleep is for the compiled"
 };
 static const char* const PHRASES_TIME_LATENIGHT_CD[] = {
@@ -165,26 +165,26 @@ static const char* const PHRASES_TIME_LATENIGHT_WARHOG[] = {
     "0300 watch. radio quiet."
 };
 static const char* const PHRASES_TIME_SPECIAL[] = {
-    "13:37. pig approves.",
-    "12:00. sun overhead. pig melts.",
+    "13:37. Stella approves.",
+    "12:00. sun overhead. fluff melts.",
     "04:20. no comment.",
-    "witching hour. pig awake.",
-    "00:00. pig persists."
+    "witching hour. wardog awake.",
+    "00:00. Stella persists."
 };
 
 // Idea 3: Network density phrases
 static const char* const PHRASES_DENSITY_HIGH[] = {
     "WIFI BUFFET",
     "drowning in beacons mate",
-    "snout cant keep up",
+    "nose cant keep up",
     "802.11 rush hour",
-    "pig spoiled for choice"
+    "wardog spoiled for choice"
 };
 static const int PHRASES_DENSITY_HIGH_COUNT = 5;
 
 static const char* const PHRASES_DENSITY_LOW[] = {
     "tumbleweeds. digital.",
-    "snout finds sod all",
+    "nose finds sod all",
     "airwaves gone quiet bruv",
     "not a beacon in sight"
 };
@@ -192,37 +192,37 @@ static const int PHRASES_DENSITY_LOW_COUNT = 4;
 
 static const char* const PHRASES_DENSITY_TRANSITION[] = {
     "APs vanishing fast",
-    "truffles appearing innit",
-    "landscape changed. pig notices."
+    "fresh scents appearing innit",
+    "landscape changed. Stella notices."
 };
 static const int PHRASES_DENSITY_TRANSITION_COUNT = 3;
 
 // Idea 4: Challenge proximity phrases
 static const char* const PHRASES_CHALLENGE_CLOSE[] = {
     "trial almost done. dont choke.",
-    "so close bruv. PIG WATCHES.",
-    "nearly there. pig stares.",
+    "so close bruv. STELLA WATCHES.",
+    "nearly there. ears forward.",
     "the demand is nearly met",
-    "finish this. pig waits."
+    "finish this. wardog waits."
 };
 static const int PHRASES_CHALLENGE_CLOSE_COUNT = 5;
 
 // Idea 5: GPS movement phrases
 static const char* const PHRASES_GPS_STILL[] = {
-    "pig grows roots",
+    "Stella sits. patiently.",
     "oi. we parked or what",
-    "truffles dont walk here mate"
+    "no new scents here mate"
 };
 static const char* const PHRASES_GPS_WALK_OINK[] = { "trotting nicely", "good pace bruv" };
 static const char* const PHRASES_GPS_WALK_WARHOG[] = { "steady patrol sir", "foot mobile" };
 static const char* const PHRASES_GPS_FAST[] = {
-    "PIG GOING FAST",
-    "snout in the wind bruv",
+    "STELLA GOING FAST",
+    "fluff in the wind bruv",
     "mobile recon activated"
 };
 static const char* const PHRASES_GPS_VFAST[] = {
-    "pig requests seatbelt",
-    "motorway truffle sweep"
+    "Stella requests seatbelt",
+    "motorway scent sweep"
 };
 static const char* const PHRASES_GPS_BADFIX[] = {
     "satellites ghosting me",
@@ -231,23 +231,23 @@ static const char* const PHRASES_GPS_BADFIX[] = {
 };
 static const char* const PHRASES_GPS_FIXBACK[] = {
     "found the sky again",
-    "sats locked. pig oriented."
+    "sats locked. wardog oriented."
 };
 
 // Idea 6: Session fatigue phrases
 static const char* const PHRASES_FATIGUE[] = {
-    "half hour. snout calibrated.",    // 0: 30min
-    "1 hour. pig nods. proper.",       // 1: 1hr
+    "half hour. nose calibrated.",    // 0: 30min
+    "1 hour. Stella nods. proper.",       // 1: 1hr
     "2 hours. outside exists btw.",    // 2: 2hr
-    "3 HOURS. pig concerned for you.", // 3: 3hr
-    "4 hours. pig judges silently.",   // 4: 4hr
-    "MARATHON. PIG SALUTES."           // 5: 6hr
+    "3 HOURS. Stella checks on you.", // 3: 3hr
+    "4 hours. wardog judges silently.",   // 4: 4hr
+    "MARATHON. STELLA SALUTES."           // 5: 6hr
 };
 
 // Idea 7: Encryption reaction phrases
 static const char* const PHRASES_ENC_WEP[] = {
     "WEP?! what year is this",
-    "WEP in 2026. pig speechless.",
+    "WEP in 2026. Stella speechless.",
     "WEP network. actual fossil."
 };
 static const char* const PHRASES_ENC_WPA3[] = {
@@ -256,27 +256,27 @@ static const char* const PHRASES_ENC_WPA3[] = {
 };
 static const char* const PHRASES_ENC_OPEN[] = {
     "open network. absolute madlad.",
-    "free wifi. pig suspicious."
+    "free wifi. wardog suspicious."
 };
 static const char* const PHRASES_ENC_MANY_OPEN = "open nets everywhere. chaos.";
 
 // Idea 8: Buff/debuff awareness phrases
 static const char* const PHRASES_BUFF_GAINED[] = {
     "something kicked in bruv",
-    "snout tingling. stats shifted.",
-    "pig juiced. modifiers active."
+    "ears tingling. stats shifted.",
+    "wardog boosted. modifiers active."
 };
 static const char* const PHRASES_DEBUFF_GAINED[] = {
     "mood tanked. penalties innit.",
-    "pig sluggish. numbers dropping.",
-    "debuffed proper. pig suffers."
+    "Stella sluggish. numbers dropping.",
+    "debuffed proper. tail low."
 };
-static const char* const PHRASES_BUFF_LOST = "modifier expired. pig baseline.";
+static const char* const PHRASES_BUFF_LOST = "modifier expired. Stella baseline.";
 
 // Weather awareness phrases (Idea 10/11: weather-mood-gamification integration)
 static const char* const PHRASES_WEATHER_RAIN_OINK[] = {
-    "rain on the snout bruv",
-    "wet trotters innit"
+    "rain on the nose bruv",
+    "wet paws innit"
 };
 static const char* const PHRASES_WEATHER_RAIN_CD[] = {
     "rain wash di signal",
@@ -300,7 +300,7 @@ static const char* const PHRASES_WEATHER_STORM_WARHOG[] = {
 };
 static const char* const PHRASES_WEATHER_CLEAR_OINK[] = {
     "proper sky tonight",
-    "clear air. snout keen."
+    "clear air. nose keen."
 };
 static const char* const PHRASES_WEATHER_CLEAR_CD[] = {
     "sky blessed bredren",
@@ -313,29 +313,29 @@ static const char* const PHRASES_WEATHER_CLEAR_WARHOG[] = {
 
 // Idea 9: Charging state phrases
 static const char* const PHRASES_CHARGING_ON[] = {
-    "plugged in. pig goes idle.",
-    "on mains. trough refilling.",
-    "USB feeding. pig content."
+    "plugged in. Stella curls up.",
+    "on mains. bowl refilling.",
+    "USB feeding. wardog content."
 };
 static const char* const PHRASES_CHARGING_OFF[] = {
     "unplugged. clock ticking.",
-    "on battery now. finite pig."
+    "on battery now. finite fluff."
 };
 static const char* const PHRASES_CHARGING_OFF_LOW = "unplugged at %d%%. bold move.";
 
 // Idea 10: Return-session phrases
 static const char* const PHRASES_RETURN_QUICK[] = {
     "back already bruv?",
-    "quick cycle. pig respects.",
+    "quick cycle. Stella respects.",
     "reboot speed: suspicious"
 };
 static const char* const PHRASES_RETURN_NORMAL[] = {
-    "pig waited. pig always waits.",
-    "snout remembers. pig ready."
+    "Stella waited. Stella always waits.",
+    "nose remembers. wardog ready."
 };
 static const char* const PHRASES_RETURN_LONG[] = {
-    "gone ages. pig coped. barely.",
-    "pig was lonely. pig lies.",
+    "gone ages. Stella coped. barely.",
+    "Stella was lonely. Stella lies.",
     "long absence. heap survived."
 };
 
@@ -1913,7 +1913,7 @@ bool Mood::pickTimePhraseIfDue(uint32_t now) {
         // Check minute for 1337 (13:37)
         auto dt = M5.Rtc.getDateTime();
         if (dt.date.year >= 2024 && dt.time.minutes >= 35 && dt.time.minutes <= 39) {
-            SET_PHRASE(currentPhrase, PHRASES_TIME_SPECIAL[0]);  // "13:37. pig approves."
+            SET_PHRASE(currentPhrase, PHRASES_TIME_SPECIAL[0]);  // "13:37. Stella approves."
             return true;
         }
     } else if (hour == 12 && random(0, 3) == 0) {

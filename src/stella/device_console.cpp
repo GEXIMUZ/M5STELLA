@@ -6,6 +6,7 @@
 
 #include "../core/porkchop.h"
 #include "../ui/display.h"
+#include "../ui/menu.h"
 #include "../ui/settings_menu.h"
 
 extern Porkchop porkchop;
@@ -16,6 +17,11 @@ namespace {
 static constexpr uint8_t kMaxRowsPerChunk = 8;
 static uint8_t pixelChunk[DISPLAY_W * kMaxRowsPerChunk];
 static unsigned char base64Chunk[((DISPLAY_W * kMaxRowsPerChunk + 2) / 3) * 4 + 1];
+
+void writeRaw(const char* text) {
+    if (!text) return;
+    Serial.write(reinterpret_cast<const uint8_t*>(text), strlen(text));
+}
 
 void writeJsonLine(JsonDocument& doc) {
     serializeJson(doc, Serial);
@@ -51,6 +57,15 @@ const uint8_t* rowPointer(uint16_t y) {
     return nullptr;
 }
 
+bool fillPixelChunk(uint16_t y, uint8_t rows) {
+    for (uint8_t row = 0; row < rows; ++row) {
+        const uint8_t* src = rowPointer(y + row);
+        if (!src) return false;
+        memcpy(pixelChunk + (size_t)row * DISPLAY_W, src, DISPLAY_W);
+    }
+    return true;
+}
+
 bool sendDisplayInfo() {
     JsonDocument reply;
     reply["type"] = "stella.display.info";
@@ -75,16 +90,12 @@ bool sendDisplayChunk(JsonDocument& request) {
     if (requestedRows > kMaxRowsPerChunk) requestedRows = kMaxRowsPerChunk;
     if (y + requestedRows > DISPLAY_H) requestedRows = DISPLAY_H - y;
 
-    const size_t rawLen = (size_t)requestedRows * DISPLAY_W;
-    for (int row = 0; row < requestedRows; ++row) {
-        const uint8_t* src = rowPointer((uint16_t)(y + row));
-        if (!src) {
-            writeError("display.chunk", "display buffer unavailable");
-            return true;
-        }
-        memcpy(pixelChunk + (size_t)row * DISPLAY_W, src, DISPLAY_W);
+    if (!fillPixelChunk((uint16_t)y, (uint8_t)requestedRows)) {
+        writeError("display.chunk", "display buffer unavailable");
+        return true;
     }
 
+    const size_t rawLen = (size_t)requestedRows * DISPLAY_W;
     size_t encodedLen = 0;
     const int rc = mbedtls_base64_encode(
         base64Chunk,
@@ -110,6 +121,50 @@ bool sendDisplayChunk(JsonDocument& request) {
     return true;
 }
 
+bool sendDisplayFrame() {
+    // Stream one JSON response for the complete framebuffer without allocating a
+    // second 32.4 KB frame or a 43 KB base64 String. DISPLAY_W is 240, which is
+    // divisible by 3, so independently encoded row chunks concatenate into one
+    // valid base64 payload without padding between chunks.
+    char header[128];
+    snprintf(
+        header,
+        sizeof(header),
+        "{\"type\":\"stella.display.frame\",\"width\":%u,\"height\":%u,\"format\":\"rgb332\",\"data\":\"",
+        (unsigned)DISPLAY_W,
+        (unsigned)DISPLAY_H
+    );
+    writeRaw(header);
+
+    for (uint16_t y = 0; y < DISPLAY_H; y += kMaxRowsPerChunk) {
+        const uint8_t rows = (uint8_t)min<int>(kMaxRowsPerChunk, DISPLAY_H - y);
+        if (!fillPixelChunk(y, rows)) {
+            // We have already started the JSON line, so terminate it cleanly.
+            writeRaw("\"}\n");
+            return true;
+        }
+
+        const size_t rawLen = (size_t)rows * DISPLAY_W;
+        size_t encodedLen = 0;
+        const int rc = mbedtls_base64_encode(
+            base64Chunk,
+            sizeof(base64Chunk),
+            &encodedLen,
+            pixelChunk,
+            rawLen
+        );
+        if (rc != 0 || encodedLen > sizeof(base64Chunk)) {
+            writeRaw("\"}\n");
+            return true;
+        }
+
+        Serial.write(base64Chunk, encodedLen);
+    }
+
+    writeRaw("\"}\n");
+    return true;
+}
+
 bool handleInput(JsonDocument& request) {
     const char* action = request["action"] | "";
     bool ok = true;
@@ -117,21 +172,38 @@ bool handleInput(JsonDocument& request) {
 
     if (strcmp(action, "settings") == 0) {
         porkchop.setMode(PorkchopMode::SETTINGS);
+    } else if (strcmp(action, "menu") == 0) {
+        porkchop.setMode(PorkchopMode::MENU);
     } else if (strcmp(action, "home") == 0) {
         porkchop.setMode(PorkchopMode::IDLE);
     } else if (strcmp(action, "up") == 0 ||
                strcmp(action, "down") == 0 ||
                strcmp(action, "enter") == 0 ||
                strcmp(action, "back") == 0) {
-        if (porkchop.getMode() != PorkchopMode::SETTINGS || !SettingsMenu::isActive()) {
-            ok = false;
-            error = "open settings first";
-        } else {
+        const PorkchopMode mode = porkchop.getMode();
+
+        if (mode == PorkchopMode::MENU && Menu::isActive()) {
+            const bool consumed = Menu::handleRemoteAction(action);
+            if (!consumed && strcmp(action, "back") == 0) {
+                porkchop.setMode(PorkchopMode::IDLE);
+            } else if (!consumed) {
+                ok = false;
+                error = "menu did not consume remote action";
+            }
+        } else if (mode == PorkchopMode::SETTINGS && SettingsMenu::isActive()) {
             SettingsMenu::handleRemoteAction(action);
             if (SettingsMenu::shouldExit()) {
                 SettingsMenu::clearExit();
-                porkchop.setMode(PorkchopMode::IDLE);
+                SettingsMenu::hide();
+                porkchop.setMode(PorkchopMode::MENU);
             }
+        } else if (strcmp(action, "back") == 0) {
+            // A universal remote Back gets the operator to the safe navigation
+            // shell. Mode cleanup is still performed by Porkchop::setMode().
+            porkchop.setMode(PorkchopMode::MENU);
+        } else {
+            ok = false;
+            error = "open menu or settings first";
         }
     } else {
         ok = false;
@@ -155,6 +227,9 @@ bool handleInput(JsonDocument& request) {
 bool handleUsbCommand(JsonDocument& doc) {
     const char* type = doc["type"] | "";
 
+    if (strcmp(type, "display.frame") == 0) {
+        return sendDisplayFrame();
+    }
     if (strcmp(type, "display.info") == 0) {
         return sendDisplayInfo();
     }

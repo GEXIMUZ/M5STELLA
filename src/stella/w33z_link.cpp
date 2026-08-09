@@ -10,6 +10,7 @@
 #include <WiFiClientSecure.h>
 
 #include "identity.h"
+#include "device_console.h"
 #include "../core/config.h"
 #include "../core/network_recon.h"
 #include "../gps/gps.h"
@@ -241,6 +242,8 @@ void processUsbCommand(const String& line) {
     JsonDocument doc;
     const DeserializationError err = deserializeJson(doc, line);
     if (err) return; // Ignore normal firmware log/noise safely.
+
+    if (StellaDeviceConsole::handleUsbCommand(doc)) return;
 
     const String type = String((const char*)(doc["type"] | ""));
     if (type == "hello") {

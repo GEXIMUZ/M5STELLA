@@ -25,6 +25,11 @@ using CommandHandler = bool (*)(CommandAction action, const String& payload, Str
 // SD-card config file: USB bootstrap + NVS is the default path.
 void init(CommandHandler handler = nullptr);
 
+// Register the native ESP32-S3 USB CDC RX event handler and ensure the TinyUSB
+// device stack is running. This follows Espressif's official USBSerial example
+// for ARDUINO_USB_MODE=0 / ARDUINO_USB_CDC_ON_BOOT=1.
+void initUsbTransport();
+
 // Service the native USB CDC bootstrap protocol. This is intentionally public
 // so main.cpp can run it before heavier UI/recon work on every loop iteration.
 void serviceUsbBootstrap();

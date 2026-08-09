@@ -122,10 +122,8 @@ bool sendDisplayChunk(JsonDocument& request) {
 }
 
 bool sendDisplayFrame() {
-    // Stream one JSON response for the complete framebuffer without allocating a
-    // second 32.4 KB frame or a 43 KB base64 String. DISPLAY_W is 240, which is
-    // divisible by 3, so independently encoded row chunks concatenate into one
-    // valid base64 payload without padding between chunks.
+    // Backwards-compatible JSON/base64 frame path. The web console now prefers
+    // display.frame.binary below so pixels do not pay base64 + JSON overhead.
     char header[128];
     snprintf(
         header,
@@ -140,7 +138,6 @@ bool sendDisplayFrame() {
         const uint16_t remaining = DISPLAY_H - y;
         const uint8_t rows = remaining < kMaxRowsPerChunk ? (uint8_t)remaining : kMaxRowsPerChunk;
         if (!fillPixelChunk(y, rows)) {
-            // We have already started the JSON line, so terminate it cleanly.
             writeRaw("\"}\n");
             return true;
         }
@@ -163,6 +160,59 @@ bool sendDisplayFrame() {
     }
 
     writeRaw("\"}\n");
+    return true;
+}
+
+bool sendDisplayFrameBinary() {
+    // Binary v2: a tiny newline-delimited JSON header followed immediately by
+    // exactly width*height raw RGB332 bytes. This cuts a 240x135 frame from
+    // ~43.2 KB base64 down to 32.4 KB and avoids a giant JSON parse in Chromium.
+    JsonDocument header;
+    header["type"] = "stella.display.binary";
+    header["width"] = DISPLAY_W;
+    header["height"] = DISPLAY_H;
+    header["format"] = "rgb332";
+    header["length"] = (uint32_t)DISPLAY_W * (uint32_t)DISPLAY_H;
+    writeJsonLine(header);
+
+    for (uint16_t y = 0; y < DISPLAY_H; y += kMaxRowsPerChunk) {
+        const uint16_t remaining = DISPLAY_H - y;
+        const uint8_t rows = remaining < kMaxRowsPerChunk ? (uint8_t)remaining : kMaxRowsPerChunk;
+        if (!fillPixelChunk(y, rows)) {
+            // Header is already on the wire. Stop; host detects a short frame.
+            return true;
+        }
+        Serial.write(pixelChunk, (size_t)rows * DISPLAY_W);
+    }
+
+    return true;
+}
+
+bool handleLaunch(JsonDocument& request) {
+    const char* target = request["target"] | "";
+    bool ok = true;
+    const char* error = nullptr;
+
+    if (strcmp(target, "passive_wifi") == 0) {
+        porkchop.setMode(PorkchopMode::DNH_MODE);
+    } else if (strcmp(target, "wardrive") == 0) {
+        porkchop.setMode(PorkchopMode::WARHOG_MODE);
+    } else if (strcmp(target, "spectrum") == 0) {
+        porkchop.setMode(PorkchopMode::SPECTRUM_MODE);
+    } else {
+        ok = false;
+        error = "unsupported quick launch target";
+    }
+
+    Display::resetDimTimer();
+
+    JsonDocument reply;
+    reply["type"] = "stella.launch";
+    reply["success"] = ok;
+    reply["target"] = target;
+    reply["mode"] = (uint8_t)porkchop.getMode();
+    if (!ok) reply["error"] = error;
+    writeJsonLine(reply);
     return true;
 }
 
@@ -199,8 +249,6 @@ bool handleInput(JsonDocument& request) {
                 porkchop.setMode(PorkchopMode::MENU);
             }
         } else if (strcmp(action, "back") == 0) {
-            // A universal remote Back gets the operator to the safe navigation
-            // shell. Mode cleanup is still performed by Porkchop::setMode().
             porkchop.setMode(PorkchopMode::MENU);
         } else {
             ok = false;
@@ -228,6 +276,9 @@ bool handleInput(JsonDocument& request) {
 bool handleUsbCommand(JsonDocument& doc) {
     const char* type = doc["type"] | "";
 
+    if (strcmp(type, "display.frame.binary") == 0) {
+        return sendDisplayFrameBinary();
+    }
     if (strcmp(type, "display.frame") == 0) {
         return sendDisplayFrame();
     }
@@ -236,6 +287,9 @@ bool handleUsbCommand(JsonDocument& doc) {
     }
     if (strcmp(type, "display.chunk") == 0) {
         return sendDisplayChunk(doc);
+    }
+    if (strcmp(type, "launch") == 0) {
+        return handleLaunch(doc);
     }
     if (strcmp(type, "input") == 0) {
         return handleInput(doc);
